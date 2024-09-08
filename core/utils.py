@@ -1,6 +1,7 @@
 import re
 from konoha import WordTokenizer
 import jieba
+from deepcut import tokenize
 
 
 def generate_sup_language_list() -> dict:
@@ -58,6 +59,12 @@ def zh_tokenizer(lyrics: str) -> str:
     return result_string
 
 
+def th_tokenizer(lyrics: str) -> str:
+    result_list = tokenize(lyrics)
+    result_string = " ".join(result_list)
+    return result_string
+
+
 if __name__ == '__main__':
     # lyrics = "\n\n\n攀登高峰望故乡\n |||黄沙万里[02:03:37]何处传来[02:03:327]驼铃声...声声敲心坎,盼望踏]]{上思念路[02:37]。飞纵千里山{]\n天边归雁披彩霞。"
     # print(clean_lyrics(lyrics))
@@ -65,5 +72,8 @@ if __name__ == '__main__':
     # sentence = "二日前このへんで飞び降り自杀した人のニュースが流れてきた血まみれセーラー危ないですから"
     # print(jp_tokenizer(sentence))
 
-    sentence = "你好我来自时域科技是一个实习生我举起手表示我是一个员工"
-    print(zh_tokenizer(sentence))
+    # sentence = "你好我来自时域科技是一个实习生我举起手表示我是一个员工"
+    # print(zh_tokenizer(sentence))
+
+    sentence = "เพราะฉันไม่รู้เลยจะทำยังไงให้ชีวิตฉันสวยงามให้เธอภูมิใจไม่เก่งภาษาเคยลองทำหลายอย่างก็ไร้ราคา"
+    print(th_tokenizer(sentence))
