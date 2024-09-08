@@ -68,6 +68,17 @@ def th_tokenizer(lyrics: str) -> list:
     return result_list
 
 
+def tokenize_lyrics(lyrics: str, tag: str) -> list:
+    if tag == 'zh':
+        return zh_tokenizer(lyrics)
+    if tag == 'jp':
+        return jp_tokenizer(lyrics)
+    if tag == 'th':
+        return zh_tokenizer(lyrics)
+    lyrics_list = lyrics.split()
+    return lyrics_list
+
+
 def decode(model_output):
     model_output = model_output.cpu().numpy()
     results = []
@@ -125,6 +136,9 @@ if __name__ == '__main__':
     # sentence = "เพราะฉันไม่รู้เลยจะทำยังไงให้ชีวิตฉันสวยงามให้เธอภูมิใจไม่เก่งภาษาเคยลองทำหลายอย่างก็ไร้ราคา"
     # print(th_tokenizer(sentence))
 
-    pre_lyrics_list = ['<eng-us>: charsiu', '<zho-s>: 是', '<zho-s>: 一种', '<eng-us>: Cantonese',
-                       '<eng-us>: style', '<eng-us>: of', '<eng-us>: barbecued', '<jpn>: 豚肉']
-    print(CharsiuG2P(pre_lyrics_list))
+    # pre_lyrics_list = ['<eng-us>: charsiu', '<zho-s>: 是', '<zho-s>: 一种', '<eng-us>: Cantonese',
+    #                    '<eng-us>: style', '<eng-us>: of', '<eng-us>: barbecued', '<jpn>: 豚肉']
+    # print(CharsiuG2P(pre_lyrics_list))
+
+    sentence = "hello i am timedomain"
+    print(tokenize_lyrics(sentence, 'en'))
