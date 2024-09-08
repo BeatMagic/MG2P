@@ -46,23 +46,23 @@ def generate_prefix_code(lang_code: str) -> str:
         return '<unk>: '
 
 
-def jp_tokenizer(lyrics: str) -> str:
+def jp_tokenizer(lyrics: str) -> list:
     tokenizer = WordTokenizer('Sentencepiece', model_path='model.spm')
     result_list = tokenizer.tokenize(lyrics)
-    result_string = ' '.join([token.surface for token in result_list if token.surface != '▁'])[1:]
-    return result_string
+    result_list = [str(item) for item in result_list]
+    if list:
+        result_list[0] = result_list[0][1:]
+    return result_list
 
 
-def zh_tokenizer(lyrics: str) -> str:
-    result_list = jieba.cut(lyrics, cut_all=False)
-    result_string = " ".join(result_list)
-    return result_string
+def zh_tokenizer(lyrics: str) -> list:
+    result_list = list(jieba.cut(lyrics, cut_all=False))
+    return result_list
 
 
-def th_tokenizer(lyrics: str) -> str:
+def th_tokenizer(lyrics: str) -> list:
     result_list = tokenize(lyrics)
-    result_string = " ".join(result_list)
-    return result_string
+    return result_list
 
 
 if __name__ == '__main__':
