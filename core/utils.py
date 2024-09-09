@@ -5,6 +5,10 @@ from deepcut import tokenize
 from transformers import T5ForConditionalGeneration, AutoTokenizer
 import torch
 import numpy as np
+from phonecodes import ipa2xsampa
+import os
+
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '2'
 
 
 def generate_sup_language_list() -> dict:
@@ -123,6 +127,11 @@ def CharsiuG2P(prefix_lyrics: list, use_32=False, use_fast=False) -> list:
     return prefix_lyrics
 
 
+def IPA2SAMPA(ipa: list):
+    result = [ipa2xsampa(i, 'unk') for i in ipa]
+    return result
+
+
 if __name__ == '__main__':
     # lyrics = "\n\n\n攀登高峰望故乡\n |||黄沙万里[02:03:37]何处传来[02:03:327]驼铃声...声声敲心坎,盼望踏]]{上思念路[02:37]。飞纵千里山{]\n天边归雁披彩霞。"
     # print(clean_lyrics(lyrics))
@@ -140,5 +149,8 @@ if __name__ == '__main__':
     #                    '<eng-us>: style', '<eng-us>: of', '<eng-us>: barbecued', '<jpn>: 豚肉']
     # print(CharsiuG2P(pre_lyrics_list))
 
-    sentence = "hello i am timedomain"
-    print(tokenize_lyrics(sentence, 'en'))
+    # sentence = "hello i am timedomain"
+    # print(tokenize_lyrics(sentence, 'en'))
+
+    text = ['ˈtʃɑɹsiu', 'ˈɪs', 'ˈeɪ', 'ˌkæntəˈniz', 'ˈstaɪɫ', 'ˈəf', 'ˈbɑɹbɪkˌjud', 'ˈpɔɹk']
+    print(IPA2SAMPA(text))
