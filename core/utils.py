@@ -108,6 +108,7 @@ def CharsiuG2P(prefix_lyrics: list, use_32=False, use_fast=False) -> list:
         batch_size = 5000
     else:
         model_path = 'charsiu/g2p_multilingual_byT5_small_100'
+        # model_path = 'D:/work/Charsiu evaluation/CharsiuPre/byT5_small_100'
     model = T5ForConditionalGeneration.from_pretrained(model_path)
     model.to(device)
     if not use_32:
