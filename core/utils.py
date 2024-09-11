@@ -58,9 +58,11 @@ def jp_tokenizer(lyrics: str) -> list:
     result_list = tokenizer.tokenize(lyrics)
     result_list = [str(item) for item in result_list]
     if list:
-        result_list[0] = result_list[0].replace('▁', '')
-        if result_list[0] == ' ' or result_list[0] == '':
-            result_list = result_list[1:]
+        for i, _ in enumerate(result_list):
+            result_list[i] = result_list[i].replace('▁', '')
+            if result_list[i] == ' ' or result_list[i] == '':
+                result_list.pop(i)
+    print(result_list)
     return result_list
 
 
