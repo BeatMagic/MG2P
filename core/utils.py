@@ -186,6 +186,7 @@ def pinyin2ipa(zh_lyrics: str) -> list:
     res = []
     for i in combine_pinyin(zh_lyrics):
         i = i[2:] if i[0].isupper() else i
+        i = i.replace('ir', 'i').replace('0', '')
         res.append(''.join(pinyin_to_ipa(i)[0]))
     return res
 
