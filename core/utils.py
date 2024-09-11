@@ -58,7 +58,9 @@ def jp_tokenizer(lyrics: str) -> list:
     result_list = tokenizer.tokenize(lyrics)
     result_list = [str(item) for item in result_list]
     if list:
-        result_list[0] = result_list[0][1:]
+        result_list[0] = result_list[0].replace('▁', '')
+        if result_list[0] == ' ' or result_list[0] == '':
+            result_list = result_list[1:]
     return result_list
 
 
@@ -73,11 +75,11 @@ def th_tokenizer(lyrics: str) -> list:
 
 
 def tokenize_lyrics(lyrics: str, tag: str) -> list:
-    if tag == 'zh':
+    if tag == 'zh' or tag == 'zho-s':
         return zh_tokenizer(lyrics)
-    if tag == 'jp':
+    if tag == 'ja' or tag == 'jpn':
         return jp_tokenizer(lyrics)
-    if tag == 'th':
+    if tag == 'th' or tag == 'tha':
         return zh_tokenizer(lyrics)
     lyrics_list = lyrics.split()
     return lyrics_list
