@@ -192,7 +192,7 @@ def pinyin2ipa(zh_lyrics: str) -> str:
     res = ''
     for i in combine_pinyin(zh_lyrics):
         i = i[2:] if i[0].isupper() else i
-        i = i.replace('ir', 'i').replace('0', '')
+        i = i.replace('ir', 'i').replace('0', '').replace('E','e')
         res += ''.join(pinyin_to_ipa(i)[0])
     return res
 
@@ -227,8 +227,21 @@ if __name__ == '__main__':
     # text = 's un1 w u4 k ong1 a1 en5'
     # print(pinyin2ipa(text))
 
-    text1 = "charsiu is a pork"
-    text2 = "孙悟空耳朵啊啊啊"
-    text3 = ["<zho-s>: 踏碎", "<zho-s>: 凌霄", "<zho-s>: 放肆", "<zho-s>: 桀骜"]
-    print(major_g2p(text1, 'en'), major_g2p(text2, 'zh'))
-    print(charsiu_g2p(text3))
+    # text1 = "charsiu is a pork"
+    # text2 = "孙悟空耳朵啊啊啊"
+    # print(major_g2p(text1, 'en'), major_g2p(text2, 'zh'))
+
+    zh_test = [
+        '啊哎安肮奥额诶嗯儿哦欧', '把波白被保班本病帮崩比别表变斌不',
+        '爬破派配跑剖盘喷旁朋平皮撇飘片拼铺', '马模么买明没猫某慢们忙梦米灭秒面民穆',
+        '法佛反分放风服', '大的带到都单扽当等动地跌调丢点读段定', '他特踢图太忒推套偷铁弹吞汤疼听痛条天',
+        '那呢你怒奶内闹牛捏男嫩您鸟年娘虐嚢能宁弄', '拉聊练凉乱咯乐力路绿来类老楼留列略蓝林论狼冷铃龙',
+        '尬歌鼓该给贵高狗干跟滚瓜关光刚更宫', '卡克库开夸宽狂亏靠扣看啃坤康坑空',
+        '哈和胡海黑号后汉很花欢黄魂行恒红', '几加叫建将窘卷句就接觉近均京', '其掐敲钱全强穷求且缺勤群清',
+        '西许秀写学信训下小先想熊选星', '炸抓专装这只猪债追找周站准长征中', '差吃出差吹歘穿创超抽产陈纯长成冲',
+        '杀射是书刷栓双晒谁少手闪身顺上声', '热日挼软入瑞绕肉然人润让扔荣', '杂泽钻子组在贼最早走赞怎尊脏增总',
+        '擦测词粗菜催窜草凑参岑存仓层从', '萨色死算素赛岁骚搜三森孙桑僧送', '瓦我屋外为玩问王翁',
+        '压哟也元一语要有月眼音云羊赢勇'
+    ]
+    res = [major_g2p(i, 'zh') for i in zh_test]
+    print(res)

@@ -49,7 +49,7 @@ class MG2P:
                 phoneme = utils.major_g2p(cleaned_lyrics, tag[0])
             else:
                 phoneme = utils.charsiu_g2p(cleaned_lyrics, tag[0], **kwargs)
-        # phoneme = utils.IPA2SAMPA(phoneme)
+        phoneme = utils.IPA2SAMPA(phoneme)
         return phoneme
 
 
