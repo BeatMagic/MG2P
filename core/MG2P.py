@@ -35,16 +35,7 @@ class MG2P:
         """
         cleaned_lyrics = utils.clean_lyrics(lyrics)
         major_lang = ['zh', 'en']
-
-        prefix_map = utils.generate_sup_language_list()
         phoneme = ''
-
-        # When a language is not supported (zero-shot), it uses <unk> as its prefix code.
-        # In fact, Charsiu can also predict phonemes without it, but the quality will be reduced
-        # lyrics = ['charsiu', 'is', 'a', 'Cantonese', 'style', 'of', 'barbecued', 'pork']
-        # eng-us: ['ˈtʃɑɹsiu', 'ˈɪs', 'ˈeɪ', 'ˌkæntəˈniz', 'ˈstaɪɫ', 'ˈəf', 'ˈbɑɹbɪkˌjud', 'ˈpɔɹk']
-        # unk: ['carsiw', 'iːs', 'a˧˧', 'kˌantonˈese', 'stˈaɪl', 'ɔv', 'bˈɑːbɪkjˌuːd', 'pɔrk']
-        # '': ['xarɕu', 'ˈis', 'a', 'kantoneze', 'stˈaɪl', 'ɔf', 'bˈɑːbɪkjˌuːd', 'pɔrk']
 
         if tag is None or len(tag) > 1:
             langlist = LangSegment.getTexts(cleaned_lyrics)
@@ -52,22 +43,13 @@ class MG2P:
                 if item['lang'] in major_lang:
                     phoneme += utils.major_g2p(item['text'], item['lang'])
                 else:
-                    prefix_lyrics_list = []
-                    prefix = prefix_map[item['lang']] if item['lang'] in prefix_map else 'unk'
-                    item_lyrics_list = utils.tokenize_lyrics(item['text'], item['lang'])
-                    item_lyrics_list = ['<' + prefix + '>: ' + i for i in item_lyrics_list]
-                    prefix_lyrics_list += item_lyrics_list
-                    phoneme += utils.charsiu_g2p(prefix_lyrics_list, **kwargs)
+                    phoneme += utils.charsiu_g2p(item['text'], item['lang'], **kwargs)
         else:
-            tag = tag[0]
-            if tag in major_lang:
-                phoneme = utils.major_g2p(cleaned_lyrics, tag)
+            if tag[0] in major_lang:
+                phoneme = utils.major_g2p(cleaned_lyrics, tag[0])
             else:
-                lyrics_list = utils.tokenize_lyrics(cleaned_lyrics, tag)
-                prefix = prefix_map[tag] if tag in prefix_map else 'unk'
-                prefix_lyrics_list = ['<' + prefix + '>: ' + i for i in lyrics_list]
-                phoneme = utils.charsiu_g2p(prefix_lyrics_list, **kwargs)
-        phoneme = utils.IPA2SAMPA(phoneme)
+                phoneme = utils.charsiu_g2p(cleaned_lyrics, tag[0], **kwargs)
+        # phoneme = utils.IPA2SAMPA(phoneme)
         return phoneme
 
 
@@ -76,4 +58,5 @@ if __name__ == '__main__':
     # print(g2p.check_if_sup('zh'))
     lyrics = 'チャーシュー是一种Cantonese风格of barbecued pork'
     lyrics1 = '踏碎凌霄 放肆桀骜 世恶道险 终究难逃'
-    print(g2p(lyrics1, ['zh']))
+    lyrics2 = '今でもあなたはわたしの光'
+    print(g2p(lyrics), g2p(lyrics1), g2p(lyrics2))

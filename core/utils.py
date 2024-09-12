@@ -99,14 +99,26 @@ def decode(model_output) -> list:
     return results
 
 
-def charsiu_g2p(prefix_lyrics: list, use_32=False, use_fast=False) -> str:
+def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> str:
     """
     Use Charsiu to perform G2P transformation for minority languages
-    :param prefix_lyrics: list of lyrics grapheme with prefix code
+    :param lyrics: lyrics grapheme str
+    :param tag: 639_1 code
     :param use_32: whether to select fp32 as the model precision, the default is fp16
     :param use_fast: use Charsiu_tiny_16 model in exchange for speed, the default is Charsiu_small
-    :return: list of lyrics phoneme
+    :return: lyrics phoneme str
     """
+    prefix_map = generate_sup_language_list()
+    # When a language is not supported (zero-shot), it uses <unk> as its prefix code.
+    # In fact, Charsiu can also predict phonemes without it, but the quality will be reduced
+    # lyrics = ['charsiu', 'is', 'a', 'Cantonese', 'style', 'of', 'barbecued', 'pork']
+    # eng-us: ['ˈtʃɑɹsiu', 'ˈɪs', 'ˈeɪ', 'ˌkæntəˈniz', 'ˈstaɪɫ', 'ˈəf', 'ˈbɑɹbɪkˌjud', 'ˈpɔɹk']
+    # unk: ['carsiw', 'iːs', 'a˧˧', 'kˌantonˈese', 'stˈaɪl', 'ɔv', 'bˈɑːbɪkjˌuːd', 'pɔrk']
+    # '': ['xarɕu', 'ˈis', 'a', 'kantoneze', 'stˈaɪl', 'ɔf', 'bˈɑːbɪkjˌuːd', 'pɔrk']
+    prefix = prefix_map[tag] if tag in prefix_map else 'unk'
+    lyrics_list = tokenize_lyrics(lyrics, tag)
+    prefix_lyrics_list = ['<' + prefix + '>: ' + i for i in lyrics_list]
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     batch_size = 2000
     if use_fast:
@@ -122,16 +134,16 @@ def charsiu_g2p(prefix_lyrics: list, use_32=False, use_fast=False) -> str:
 
     tokenizer = AutoTokenizer.from_pretrained('google/byt5-small')
     # tokenizer = AutoTokenizer.from_pretrained('D:/work/Charsiu evaluation/CharsiuPre/byt5-small')
-    for i in range(0, len(prefix_lyrics), batch_size):
-        batch = prefix_lyrics[i:i + batch_size]
+    for i in range(0, len(prefix_lyrics_list), batch_size):
+        batch = prefix_lyrics_list[i:i + batch_size]
 
         with torch.cuda.amp.autocast():
             out = tokenizer(batch, padding=True, add_special_tokens=False, return_tensors='pt').to(device)
             preds = model.generate(**out, num_beams=1, max_length=30)
             phones = decode(preds)
-        prefix_lyrics[i:i + batch_size] = phones
-    prefix_lyrics = ''.join(prefix_lyrics)
-    return prefix_lyrics
+        prefix_lyrics_list[i:i + batch_size] = phones
+    res = ''.join(prefix_lyrics_list)
+    return res
 
 
 def major_g2p(lyrics: str, tag: str) -> str:
