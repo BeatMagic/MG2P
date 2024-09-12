@@ -5,7 +5,7 @@ from deepcut import tokenize
 from transformers import T5ForConditionalGeneration, AutoTokenizer
 import torch
 import numpy as np
-from phonecodes import ipa2xsampa, arpabet2ipa
+from MG2P.core.phonecodes import ipa2xsampa, arpabet2ipa
 from pinyin_to_ipa import pinyin_to_ipa
 import g2p
 import os
@@ -18,7 +18,7 @@ def generate_sup_language_list() -> dict:
     generate support languages list
     """
     mapping = {}
-    tsv_path = "639_1toPrefix.tsv"
+    tsv_path = "MG2P/core/639_1toPrefix.tsv"
     with open(tsv_path, 'r', encoding='utf-8') as f:
         for line in f:
             parts = line.strip().split()
@@ -56,7 +56,7 @@ def generate_prefix_code(lang_code: str) -> str:
 
 
 def jp_tokenizer(lyrics: str) -> list:
-    tokenizer = WordTokenizer('Sentencepiece', model_path='model.spm')
+    tokenizer = WordTokenizer('Sentencepiece', model_path='MG2P/core/model.spm')
     result_list = tokenizer.tokenize(lyrics)
     result_list = [str(item) for item in result_list]
     if list:

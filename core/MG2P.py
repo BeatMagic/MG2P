@@ -1,4 +1,4 @@
-import utils
+import MG2P.core.utils as utils
 import LangSegment
 
 
