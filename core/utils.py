@@ -99,7 +99,7 @@ def decode(model_output) -> list:
     return results
 
 
-def charsiu_g2p(prefix_lyrics: list, use_32=False, use_fast=False) -> list:
+def charsiu_g2p(prefix_lyrics: list, use_32=False, use_fast=False) -> str:
     """
     Use Charsiu to perform G2P transformation for minority languages
     :param prefix_lyrics: list of lyrics grapheme with prefix code
@@ -130,11 +130,11 @@ def charsiu_g2p(prefix_lyrics: list, use_32=False, use_fast=False) -> list:
             preds = model.generate(**out, num_beams=1, max_length=30)
             phones = decode(preds)
         prefix_lyrics[i:i + batch_size] = phones
-
+    prefix_lyrics = ''.join(prefix_lyrics)
     return prefix_lyrics
 
 
-def major_g2p(lyrics: str, tag: str) -> list:
+def major_g2p(lyrics: str, tag: str) -> str:
     """
     Convert major languages to phonemes with our G2P.
     Currently, supports English and Chinese
@@ -146,14 +146,12 @@ def major_g2p(lyrics: str, tag: str) -> list:
         zh_pinyin = ' '.join(g2p.infer(lyrics)[0]['phones'])
         return pinyin2ipa(zh_pinyin)
     if tag == 'en':
-        en_list = lyrics.split()
-        en_arpa = [' '.join(g2p.infer(i)[0]['phones']) for i in en_list]
+        en_arpa = ' '.join(g2p.infer(lyrics)[0]['phones'])
         return arpa2ipa(en_arpa)
 
 
-def IPA2SAMPA(ipa: list):
-    result = [ipa2xsampa(i, 'unk') for i in ipa]
-    return result
+def IPA2SAMPA(ipa: str) -> str:
+    return ipa2xsampa(ipa, 'unk')
 
 
 def combine_pinyin(pinyin: str) -> list:
@@ -173,21 +171,17 @@ def combine_pinyin(pinyin: str) -> list:
     return res
 
 
-def arpa2ipa(en_lyrics: list) -> list:
-    """
-    英文不像中文在韵母后面跟着音调可以分开字, 所以只能牺牲速度保证精度,
-    中文可以直接处理成字符串, 然后再按规则分开
-    """
-    res = [arpabet2ipa(i, 'en').replace(' ', '') for i in en_lyrics]
+def arpa2ipa(en_lyrics: str) -> str:
+    res = arpabet2ipa(en_lyrics, 'en').replace(' ', '')
     return res
 
 
-def pinyin2ipa(zh_lyrics: str) -> list:
-    res = []
+def pinyin2ipa(zh_lyrics: str) -> str:
+    res = ''
     for i in combine_pinyin(zh_lyrics):
         i = i[2:] if i[0].isupper() else i
         i = i.replace('ir', 'i').replace('0', '')
-        res.append(''.join(pinyin_to_ipa(i)[0]))
+        res += ''.join(pinyin_to_ipa(i)[0])
     return res
 
 
@@ -223,4 +217,6 @@ if __name__ == '__main__':
 
     text1 = "charsiu is a pork"
     text2 = "孙悟空耳朵啊啊啊"
+    text3 = ["<zho-s>: 踏碎", "<zho-s>: 凌霄", "<zho-s>: 放肆", "<zho-s>: 桀骜"]
     print(major_g2p(text1, 'en'), major_g2p(text2, 'zh'))
+    print(charsiu_g2p(text3))
