@@ -7,7 +7,7 @@ import torch
 import numpy as np
 from MG2P.core.phonecodes import ipa2xsampa, arpabet2ipa
 from pinyin_to_ipa import pinyin_to_ipa
-import g2p
+import MG2P.core.g2p as g2p
 import os
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '2'
