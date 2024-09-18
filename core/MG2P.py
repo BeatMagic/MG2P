@@ -25,19 +25,19 @@ class MG2P:
         and other languages use CharsiuG2P
 
         :param lyric supports data cleaning of dirty lyrics
-        :param tag the model expects a 639_1 list (even if it is one) of the languages in the input lyrics,
+        :param tag the model expects a 639_1 code of the languages in the input lyrics,
         and if this field is ignored the model automatically determines the language
         :param **kwargs you can adjust the speed and quality of CharsiuG2P with multiple input parameters
         use_32=True  use fp32 precision, the default is fp16
         use_fast=True use tiny_16 model, the default is small
 
-        example: MG2P("踏碎凌霄 放肆桀骜",['zh']) -> t_ha_1_5swei_^_1_5li_3_1Ns\jau_^_1fa_1_5Nsr\_=_1_5ts\je_3_1au_^_1_5
+        example: MG2P("踏碎凌霄 放肆桀骜",'zh') -> t_ha_1_5swei_^_1_5li_3_1Ns\jau_^_1fa_1_5Nsr\_=_1_5ts\je_3_1au_^_1_5
         """
         cleaned_lyrics = utils.clean_lyrics(lyrics)
-        major_lang = ['zh', 'en']
+        major_lang = ['zh', 'en', 'ja']
         phoneme = ''
 
-        if tag is None or len(tag) > 1:
+        if tag is None:
             langlist = LangSegment.getTexts(cleaned_lyrics)
             for item in langlist:
                 if item['lang'] in major_lang:
@@ -45,10 +45,10 @@ class MG2P:
                 else:
                     phoneme += utils.charsiu_g2p(item['text'], item['lang'], **kwargs)
         else:
-            if tag[0] in major_lang:
-                phoneme = utils.major_g2p(cleaned_lyrics, tag[0])
+            if tag in major_lang:
+                phoneme = utils.major_g2p(cleaned_lyrics, tag)
             else:
-                phoneme = utils.charsiu_g2p(cleaned_lyrics, tag[0], **kwargs)
+                phoneme = utils.charsiu_g2p(cleaned_lyrics, tag, **kwargs)
         phoneme = utils.IPA2SAMPA(phoneme)
         return phoneme
 
