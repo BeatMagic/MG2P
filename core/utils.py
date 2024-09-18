@@ -9,6 +9,7 @@ from MG2P.core.phonecodes import ipa2xsampa, arpabet2ipa
 from pinyin_to_ipa import pinyin_to_ipa
 import MG2P.core.g2p as g2p
 import os
+import json
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '2'
 
@@ -139,11 +140,19 @@ def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> str:
 
         with torch.cuda.amp.autocast():
             out = tokenizer(batch, padding=True, add_special_tokens=False, return_tensors='pt').to(device)
-            preds = model.generate(**out, num_beams=1, max_length=30)
+            preds = model.generate(**out, num_beams=1, max_length=61)
             phones = decode(preds)
         prefix_lyrics_list[i:i + batch_size] = phones
     res = ''.join(prefix_lyrics_list)
     return res
+
+
+def load_romaji2ipa_map() -> dict:
+    json_path = 'MG2P/core/roma_ipa_mapping.json'
+    with open(json_path, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+        phoneme_to_ipa_map = {phoneme: ipa[0] for phoneme, ipa in data["phoneme2ipa"].items()}
+    return phoneme_to_ipa_map
 
 
 def major_g2p(lyrics: str, tag: str) -> str:
@@ -160,6 +169,12 @@ def major_g2p(lyrics: str, tag: str) -> str:
     if tag == 'en':
         en_arpa = ' '.join(g2p.infer(lyrics)[0]['phones'])
         return arpa2ipa(en_arpa)
+    if tag == 'ja':
+        roma2ipa = load_romaji2ipa_map()
+        ja_roma_list = g2p.infer(lyrics)[0]['phones']
+        ja_roma_list = [i.lower() for i in ja_roma_list]
+        ja_ipa_str = ''.join([roma2ipa[i] for i in ja_roma_list])
+        return ja_ipa_str
 
 
 def IPA2SAMPA(ipa: str) -> str:
@@ -192,7 +207,7 @@ def pinyin2ipa(zh_lyrics: str) -> str:
     res = ''
     for i in combine_pinyin(zh_lyrics):
         i = i[2:] if i[0].isupper() else i
-        i = i.replace('ir', 'i').replace('0', '').replace('E','e')
+        i = i.replace('ir', 'i').replace('0', '').replace('E', 'e')
         res += ''.join(pinyin_to_ipa(i)[0])
     return res
 
