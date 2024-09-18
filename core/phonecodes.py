@@ -17,7 +17,7 @@
    # for other tables, see phonecode_tables.py
 '''
 import re,sys
-import core.phonecode_tables as phonecode_tables
+import MG2P.core.phonecode_tables as phonecode_tables
 
 CODES=set(('ipa','arpabet','xsampa','disc','callhome'))
 LANGUAGES=set(('eng','deu','nld','arz','cmn','spa','yue','lao','vie'))
