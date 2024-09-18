@@ -8,7 +8,7 @@ import cn2an
 from .symbol import punctuation
 from .tone_sandhi import ToneSandhi
 from .zh_normalization.text_normlization import TextNormalizer
-
+import hanlp
 
 rep_map = {
     "：": ",",
@@ -26,6 +26,40 @@ rep_map = {
     "—": "-",
     "~": "…",
     "～": "…",
+}
+POS_MAP = {
+    'AD': 'd',
+    'AS': 'u',
+    'BA': 'p',
+    'CC': 'c',
+    'CD': 'm',
+    'CS': 'c',
+    'DEC': 'uj',
+    'DEG': 'uj',
+    'DER': 'ud',
+    'DEV': 'uv',
+    'DT': 'r',
+    'ETC': 'u',
+    'FW': 'eng',
+    'IJ': 'zg',
+    'JJ': 'a',
+    'LB': 'p',
+    'LC': 'f',
+    'M': 'm',
+    'MSP': 'u',
+    'NN': 'n',
+    'NR': 'nr',
+    'NT': 'm',
+    'OD': 'm',
+    'ON': 'o',
+    'P': 'p',
+    'PN': 'r',
+    'SB': 'p',
+    'SP': 'y',
+    'VA': 'a',
+    'VC': 'v',
+    'VE': 'v',
+    'VV': 'v',
 }
 
 current_file_path = os.path.dirname(__file__)
@@ -78,14 +112,19 @@ def _get_initials_finals(word):
 def _g2p(segments):
     phones_list = []
     word2ph = []
+    tok_fine = hanlp.load(hanlp.pretrained.tok.FINE_ELECTRA_SMALL_ZH)
+    pos = hanlp.load(hanlp.pretrained.pos.CTB9_POS_ELECTRA_SMALL)
     for seg in segments:
         # Replace all English words in the sentence
         seg = re.sub("[a-zA-Z]+", "", seg)
-        seg_cut = psg.lcut(seg)
+        # seg_cut = psg.lcut(seg)
+        token_list = tok_fine(seg)
+        pos_list = pos(token_list)
         initials = []
         finals = []
-        seg_cut = tone_modifier.pre_merge_for_modify(seg_cut)
-        for word, pos in seg_cut:
+        # seg_cut = tone_modifier.pre_merge_for_modify(seg_cut)
+        # for word, pos in seg_cut:
+        for word, pos in zip(token_list, pos_list):
             if pos == "eng":
                 continue
             sub_initials, sub_finals = _get_initials_finals(word)
