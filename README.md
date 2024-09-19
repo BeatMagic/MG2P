@@ -4,12 +4,11 @@ Multilingual G2P API
 
 ## Install
 
-***
 
 ```shell
-conda create - -name your_env_name python==3.10
+conda create --name your_env_name python==3.10
 conda activate your_env_name
-pip install - r requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Usage
@@ -40,12 +39,11 @@ print(g2p(lyrics3))
 # imademoanatawawatas\inohika4i
 ```
 
-note: the model expects a 639-1 code of the languages in the input lyrics, if this field is ignored the model
+note: the model expects a 639-1 code of the language in the input lyrics, if this field is ignored the model
 automatically determines the language
 
 ## Acknowledgements
 
-***
 
 * lingjzhu's [CharsiuG2P](https://github.com/lingjzhu/CharsiuG2P)
 * DumoeDss and ChuxiJ's [G2P](https://github.com/BeatMagic/g2p)
