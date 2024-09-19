@@ -164,10 +164,10 @@ def major_g2p(lyrics: str, tag: str) -> str:
     :return: ipa list
     """
     if tag == 'zh':
-        zh_pinyin = ' '.join(g2p.infer(lyrics)[0]['phones'])
+        zh_pinyin = g2p.infer(lyrics)[0]['phones']
         return pinyin2ipa(zh_pinyin)
     if tag == 'en':
-        en_arpa = ' '.join(g2p.infer(lyrics)[0]['phones'])
+        en_arpa = ''.join(g2p.infer(lyrics)[0]['phones'])
         return arpa2ipa(en_arpa)
     if tag == 'ja':
         roma2ipa = load_romaji2ipa_map()
@@ -181,15 +181,14 @@ def IPA2SAMPA(ipa: str) -> str:
     return ipa2xsampa(ipa, 'unk')
 
 
-def combine_pinyin(pinyin: str) -> list:
+def combine_pinyin(pinyin: list) -> list:
     """
-    :example: 's un1 w u4 k ong1 en5' -> ['sun1','wu4','kong1','en5']
+    :example: '['s','un1','w','u4','k','ong1','en5']' -> ['sun1','wu4','kong1','en5']
     """
     res = []
-    syllables = pinyin.split()
     total = ''
-    while syllables:
-        current = syllables.pop(0)
+    while pinyin:
+        current = pinyin.pop(0)
         total += current
         if any(char.isdigit() for char in total):
             res.append(total)
@@ -199,11 +198,11 @@ def combine_pinyin(pinyin: str) -> list:
 
 
 def arpa2ipa(en_lyrics: str) -> str:
-    res = arpabet2ipa(en_lyrics, 'en').replace(' ', '')
+    res = arpabet2ipa(en_lyrics, 'en')
     return res
 
 
-def pinyin2ipa(zh_lyrics: str) -> str:
+def pinyin2ipa(zh_lyrics: list) -> str:
     res = ''
     for i in combine_pinyin(zh_lyrics):
         i = i[2:] if i[0].isupper() else i
