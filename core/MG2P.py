@@ -19,9 +19,9 @@ class MG2P:
             return False
         return True
 
-    def __call__(self, lyrics: str, tag=None, **kwargs) -> str:
+    def __call__(self, lyrics: str, tag=None, **kwargs) -> list:
         """
-        Convert the lyrics to the corresponding xsampa, Currently, Chinese and English use internal g2p,
+        Convert the lyrics to the corresponding xsampa, Currently, Chinese, Japanese and English use internal g2p,
         and other languages use CharsiuG2P
 
         :param lyric supports data cleaning of dirty lyrics
@@ -31,11 +31,11 @@ class MG2P:
         use_32=True  use fp32 precision, the default is fp16
         use_fast=True use tiny_16 model, the default is small
 
-        example: MG2P("踏碎凌霄 放肆桀骜",'zh') -> t_ha_1_5swei_^_1_5li_3_1Ns\jau_^_1fa_1_5Nsr\_=_1_5ts\je_3_1au_^_1_5
+        example: MG2P("踏碎凌霄 放肆桀骜",'zh') -> ['t_h', 'a_1_5', 's', 'w', 'ei_^_1_5', 'l', 'i_3_1', 'N', 's\\', 'j', 'au_^_1', 'f', 'a_1_5', 'N', 's', 'r\\_=_1_5', 'ts\\', 'j', 'e_3_1', 'au_^_1_5']
         """
         cleaned_lyrics = utils.clean_lyrics(lyrics)
         major_lang = ['zh', 'en', 'ja']
-        phoneme = ''
+        phoneme = []
 
         if tag is None:
             langlist = LangSegment.getTexts(cleaned_lyrics)

@@ -100,7 +100,7 @@ def decode(model_output) -> list:
     return results
 
 
-def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> str:
+def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> list:
     """
     Use Charsiu to perform G2P transformation for minority languages
     :param lyrics: lyrics grapheme str
@@ -143,7 +143,7 @@ def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> str:
             preds = model.generate(**out, num_beams=1, max_length=61)
             phones = decode(preds)
         prefix_lyrics_list[i:i + batch_size] = phones
-    res = ''.join(prefix_lyrics_list)
+    res = prefix_lyrics_list
     return res
 
 
@@ -155,7 +155,7 @@ def load_romaji2ipa_map() -> dict:
     return phoneme_to_ipa_map
 
 
-def major_g2p(lyrics: str, tag: str) -> str:
+def major_g2p(lyrics: str, tag: str) -> list:
     """
     Convert major languages to phonemes with our G2P.
     Currently, supports English and Chinese
@@ -167,18 +167,16 @@ def major_g2p(lyrics: str, tag: str) -> str:
         zh_pinyin = g2p.infer(lyrics)[0]['phones']
         return pinyin2ipa(zh_pinyin)
     if tag == 'en':
-        en_arpa = ''.join(g2p.infer(lyrics)[0]['phones'])
+        en_arpa = g2p.infer(lyrics)[0]['phones']
         return arpa2ipa(en_arpa)
     if tag == 'ja':
-        roma2ipa = load_romaji2ipa_map()
-        ja_roma_list = g2p.infer(lyrics)[0]['phones']
-        ja_roma_list = [i.lower() for i in ja_roma_list]
-        ja_ipa_str = ''.join([roma2ipa[i] for i in ja_roma_list])
-        return ja_ipa_str
+        ja_roma = g2p.infer(lyrics)[0]['phones']
+        return romaji2ipa(ja_roma)
 
 
-def IPA2SAMPA(ipa: str) -> str:
-    return ipa2xsampa(ipa, 'unk')
+def IPA2SAMPA(ipa: list) -> list:
+    res = [ipa2xsampa(i, 'unk') for i in ipa]
+    return res
 
 
 def combine_pinyin(pinyin: list) -> list:
@@ -197,17 +195,28 @@ def combine_pinyin(pinyin: list) -> list:
     return res
 
 
-def arpa2ipa(en_lyrics: str) -> str:
-    res = arpabet2ipa(en_lyrics, 'en')
+def arpa2ipa(en_lyrics: list) -> list:
+    res = []
+    for i in en_lyrics:
+        res += arpabet2ipa(i, 'en')
     return res
 
 
-def pinyin2ipa(zh_lyrics: list) -> str:
-    res = ''
+def pinyin2ipa(zh_lyrics: list) -> list:
+    res = []
     for i in combine_pinyin(zh_lyrics):
         i = i[2:] if i[0].isupper() else i
         i = i.replace('ir', 'i').replace('0', '').replace('E', 'e')
-        res += ''.join(pinyin_to_ipa(i)[0])
+        res += pinyin_to_ipa(i)[0]
+    return res
+
+
+def romaji2ipa(ja_lyrics: list) -> list:
+    res = []
+    roma2ipa = load_romaji2ipa_map()
+    ja_roma_list = [i.lower() for i in ja_lyrics]
+    for i in ja_roma_list:
+        res += roma2ipa[i]
     return res
 
 
