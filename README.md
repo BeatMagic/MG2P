@@ -30,13 +30,13 @@ lyrics1 = 'チャーシュー是一种barbecued pork'
 lyrics2 = '踏碎凌霄 放肆桀骜'
 lyrics3 = '今でもあなたはわたしの光'
 print(g2p(lyrics1))
-# t͡s\aas\uuzeit͡s\ib"Ar\b1kj%udp"Or\k
+# ['t', 'S', '"', 'A', 'r\\', 's', '"', 'i', 'u', '"', 'I', 'z', '@', 'p', '"', 'O', 'r\\', 'k']
 print(g2p(lyrics1, 'en'))
-# t͡s\aas\uuzeit͡s\ib"Ar\b1kj%udp"Or\k
+# ['t', 'S', '"', 'A', 'r\\', 's', '"', 'i', 'u', '"', 'I', 'z', '@', 'p', '"', 'O', 'r\\', 'k']
 print(g2p(lyrics2))
-# t_ha_1_5swei_^_1_5li_3_1Ns\jau_^_1fa_1_5Nsr\_=_1_5ts\je_3_1au_^_1_5
+# ['t_h', 'a_1_5', 's', 'w', 'ei_^_1_5', 'l', 'i_3_1', 'N', 's\\', 'j', 'au_^_1', 'f', 'a_1_5', 'N', 's', 'r\\_=_1_5', 'ts\\', 'j', 'e_3_1', 'au_^_1_5']
 print(g2p(lyrics3))
-# imademoanatawawatas\inohika4i
+# ['i', 'm', 'a', 'd', 'e', 'm', 'o', 'a', 'n', 'a', 't', 'a', 'w', 'a', 'w', 'a', 't', 'a', 's\\', 'i', 'n', 'o', 'h', 'i', 'k', 'a', '4', 'i']
 ```
 
 note: the model expects a 639-1 code of the language in the input lyrics, if this field is ignored the model
