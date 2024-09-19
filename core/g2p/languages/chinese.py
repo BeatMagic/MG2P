@@ -1,7 +1,7 @@
 import os
 import re
 
-import jieba_fast.posseg as psg
+# import jieba_fast.posseg as psg
 from pypinyin import lazy_pinyin, Style
 import cn2an
 
