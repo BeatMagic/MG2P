@@ -10,10 +10,18 @@ from pinyin_to_ipa import pinyin_to_ipa
 import MG2P.core.g2p as g2p
 import os
 import json
-# from MG2P.core.ipa2list import ipalist2phoneme
+from MG2P.core.ipa2list import ipalist2phoneme
 import LangSegment
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '2'
+
+PITCH_CONTOUR_TO_IPA = {
+    "˥": "¹",
+    "˧˥": "²",
+    "˧˩˧": "³",
+    "˥˩": "⁴",
+    "0": "º"
+}
 
 
 def generate_sup_language_list() -> dict:
@@ -59,6 +67,7 @@ def generate_prefix_code(lang_code: str) -> str:
 
 
 def jp_tokenizer(lyrics: str) -> list:
+    # deprecated
     tokenizer = WordTokenizer('Sentencepiece', model_path='MG2P/core/model.spm')
     result_list = tokenizer.tokenize(lyrics)
     result_list = [str(item) for item in result_list]
@@ -67,11 +76,11 @@ def jp_tokenizer(lyrics: str) -> list:
             result_list[i] = result_list[i].replace('▁', '')
             if result_list[i] == ' ' or result_list[i] == '':
                 result_list.pop(i)
-    # print(result_list)
     return result_list
 
 
 def zh_tokenizer(lyrics: str) -> list:
+    # deprecated
     result_list = list(jieba.cut(lyrics, cut_all=False))
     return result_list
 
@@ -82,14 +91,35 @@ def th_tokenizer(lyrics: str) -> list:
 
 
 def tokenize_lyrics(lyrics: str, tag: str) -> list:
-    if tag == 'zh' or tag == 'zho-s':
+    if tag == 'zh' or tag == 'zho-s':  # deprecated
         return zh_tokenizer(lyrics)
-    if tag == 'ja' or tag == 'jpn':
+    if tag == 'ja' or tag == 'jpn':  # deprecated
         return jp_tokenizer(lyrics)
     if tag == 'th' or tag == 'tha':
         return th_tokenizer(lyrics)
     lyrics_list = lyrics.split()
     return lyrics_list
+
+
+def zh_tone_backend(ipa: list) -> (list, list):
+    tones = ["˧˥", "˧˩˧", "˥˩", "˥", "0"]
+    processed_ipa = []
+    split_ipa = []
+    while ipa:
+        current = ipa.pop(0)
+        flag = True
+        for tone in tones:
+            if tone in current:
+                split_ipa.append(current.replace(tone, ''))
+                split_ipa.append(tone)
+                processed_ipa.append(current.replace(tone, ''))
+                processed_ipa.append(PITCH_CONTOUR_TO_IPA[tone])
+                flag = False
+                break
+        if flag:
+            split_ipa.append(current)
+            processed_ipa.append(current)
+    return split_ipa, processed_ipa
 
 
 def multi_lang_tokenizer(lyrics: str) -> list:
@@ -114,14 +144,14 @@ def decode(model_output) -> list:
     return results
 
 
-def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> list:
+def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> (list, list):
     """
     Use Charsiu to perform G2P transformation for minority languages
     :param lyrics: lyrics grapheme str
     :param tag: 639_1 code
     :param use_32: whether to select fp32 as the model precision, the default is fp16
     :param use_fast: use Charsiu_tiny_16 model in exchange for speed, the default is Charsiu_small
-    :return: lyrics phoneme str
+    :return: ipa phoneme list, xsampa phoneme list
     """
     prefix_map = generate_sup_language_list()
     # When a language is not supported (zero-shot), it uses <unk> as its prefix code.
@@ -157,9 +187,9 @@ def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> list:
             preds = model.generate(**out, num_beams=1, max_length=61)
             phones = decode(preds)
         prefix_lyrics_list[i:i + batch_size] = phones
-    # res = ipalist2phoneme(prefix_lyrics_list, tag)
-    res = prefix_lyrics_list
-    return res
+    ipa_list = ipalist2phoneme(prefix_lyrics_list, tag)
+    xsampa = IPA2SAMPA(ipa_list)
+    return ipa_list, xsampa
 
 
 def load_romaji2ipa_map() -> dict:
@@ -170,27 +200,38 @@ def load_romaji2ipa_map() -> dict:
     return phoneme_to_ipa_map
 
 
-def major_g2p(lyrics: str, tag: str) -> list:
+def major_g2p(lyrics: str, tag: str) -> (list, list):
     """
     Convert major languages to phonemes with our G2P.
     Currently, supports English and Chinese
     :param lyrics: lyrics only contain one language
     :param tag: 639_1/639_2 code
-    :return: ipa list
+    :return: ipa phoneme list, xsampa phoneme list
     """
     if tag == 'zh':
-        zh_pinyin = g2p.infer(lyrics)[0]['phones']
-        return pinyin2ipa(zh_pinyin)
+        zh_pinyin = g2p.infer(lyrics, tag)[0]['phones']
+        split_ipa, processed_ipa = pinyin2ipa(zh_pinyin)
+        xsampa = IPA2SAMPA(split_ipa, True)
+        return processed_ipa, xsampa
     if tag == 'en':
-        en_arpa = g2p.infer(lyrics)[0]['phones']
-        return arpa2ipa(en_arpa)
+        en_arpa = g2p.infer(lyrics, tag)[0]['phones']
+        ipa = arpa2ipa(en_arpa)
+        xsampa = IPA2SAMPA(ipa)
+        return ipa, xsampa
     if tag == 'ja':
-        ja_roma = g2p.infer(lyrics)[0]['phones']
-        return romaji2ipa(ja_roma)
+        ja_roma = g2p.infer(lyrics, tag)[0]['phones']
+        ipa = romaji2ipa(ja_roma)
+        xsampa = IPA2SAMPA(ipa)
+        return ipa, xsampa
 
 
-def IPA2SAMPA(ipa: list) -> list:
+def IPA2SAMPA(ipa: list, zh=False) -> list:
     res = [ipa2xsampa(i, 'unk') for i in ipa]
+    if zh:
+        zh_tone_map = {"0": "_0", "_3_1": "_2", "_3_5_3": "_3", "_1_5": "_4"}
+        for i, _ in enumerate(res):
+            if res[i] in zh_tone_map:
+                res[i] = zh_tone_map[res[i]]
     return res
 
 
@@ -217,13 +258,17 @@ def arpa2ipa(en_lyrics: list) -> list:
     return res
 
 
-def pinyin2ipa(zh_lyrics: list) -> list:
+def pinyin2ipa(zh_lyrics: list) -> (list, list):
     res = []
+    tones = ["˧˥", "˧˩˧", "˥˩", "˥"]
     for i in combine_pinyin(zh_lyrics):
         i = i[2:] if i[0].isupper() else i
         i = i.replace('ir', 'i').replace('0', '').replace('E', 'e')
-        res += pinyin_to_ipa(i)[0]
-    return res
+        ipa_list = list(pinyin_to_ipa(i)[0])
+        if len(ipa_list) == 1 and not any(tone in ipa_list[0] for tone in tones):  # 轻声补充标志0
+            ipa_list[0] = ipa_list[0] + '0'
+        res += ipa_list
+    return zh_tone_backend(res)
 
 
 def romaji2ipa(ja_lyrics: list) -> list:
