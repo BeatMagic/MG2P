@@ -10,6 +10,8 @@ from pinyin_to_ipa import pinyin_to_ipa
 import MG2P.core.g2p as g2p
 import os
 import json
+# from MG2P.core.ipa2list import ipalist2phoneme
+import LangSegment
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '2'
 
@@ -90,6 +92,18 @@ def tokenize_lyrics(lyrics: str, tag: str) -> list:
     return lyrics_list
 
 
+def multi_lang_tokenizer(lyrics: str) -> list:
+    LangSegment.setfilters(
+        ['af', 'am', 'an', 'ar', 'as', 'az', 'be', 'bg', 'bn', 'br', 'bs', 'ca', 'cs', 'cy', 'da', 'de', 'dz', 'el',
+         'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fo', 'fr', 'ga', 'gl', 'gu', 'he', 'hi', 'hr', 'ht', 'hu', 'hy',
+         'id', 'is', 'it', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 'ku', 'ky', 'la', 'lb', 'lo', 'lt', 'lv', 'mg',
+         'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'nb', 'ne', 'nl', 'nn', 'no', 'oc', 'or', 'pa', 'pl', 'ps', 'pt', 'qu',
+         'ro', 'ru', 'rw', 'se', 'si', 'sk', 'sl', 'sq', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tl', 'tr', 'ug', 'uk',
+         'ur', 'vi', 'vo', 'wa', 'xh', 'zh', 'zu'])
+    langlist = LangSegment.getTexts(lyrics)
+    return langlist
+
+
 def decode(model_output) -> list:
     model_output = model_output.cpu().numpy()
     results = []
@@ -143,6 +157,7 @@ def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> list:
             preds = model.generate(**out, num_beams=1, max_length=61)
             phones = decode(preds)
         prefix_lyrics_list[i:i + batch_size] = phones
+    # res = ipalist2phoneme(prefix_lyrics_list, tag)
     res = prefix_lyrics_list
     return res
 

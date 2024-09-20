@@ -1,5 +1,4 @@
 import MG2P.core.utils as utils
-import LangSegment
 
 
 class MG2P:
@@ -38,12 +37,12 @@ class MG2P:
         phoneme = []
 
         if tag is None:
-            langlist = LangSegment.getTexts(cleaned_lyrics)
+            langlist = utils.multi_lang_tokenizer(cleaned_lyrics)
             for item in langlist:
                 if item['lang'] in major_lang:
-                    phoneme += utils.major_g2p(item['text'], item['lang'])
+                    phoneme.extend(utils.major_g2p(item['text'], item['lang']))
                 else:
-                    phoneme += utils.charsiu_g2p(item['text'], item['lang'], **kwargs)
+                    phoneme.extend(utils.charsiu_g2p(item['text'], item['lang'], **kwargs))
         else:
             if tag in major_lang:
                 phoneme = utils.major_g2p(cleaned_lyrics, tag)
