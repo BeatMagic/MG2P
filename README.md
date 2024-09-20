@@ -26,17 +26,27 @@ from MG2P.core.MG2P import MG2P
 
 # test.py
 g2p = MG2P()
-lyrics1 = 'チャーシュー是一种barbecued pork'
-lyrics2 = '踏碎凌霄 放肆桀骜'
-lyrics3 = '今でもあなたはわたしの光'
+lyrics = 'チャーシュー是一种barbecued pork'
+lyrics1 = '踏碎凌霄 放肆桀骜'
+lyrics2 = '今でもあなたはわたしの光'
+lyrics3 = 'charsiu is a pork'
+lyrics4 = '사랑해요'
+print(g2p(lyrics))
+# ['t', '͡', 'ɕ', 'a', 'a', 'ɕ', 'u', 'u', 'z', 'e', 'i', 't', '͡', 'ɕ', 'i', 'b', 'a', 'ɾ', 'β', 'e', 'k', 'w', 'e', 'ð', 'p', 'o', 'ɾ', 'k'], 
+# ['t', '͡', 's\\', 'a', 'a', 's\\', 'u', 'u', 'z', 'e', 'i', 't', '͡', 's\\', 'i', 'b', 'a', '4', 'B', 'e', 'k', 'w', 'e', 'D', 'p', 'o', '4', 'k']
 print(g2p(lyrics1))
-# ['t', 'S', '"', 'A', 'r\\', 's', '"', 'i', 'u', '"', 'I', 'z', '@', 'p', '"', 'O', 'r\\', 'k']
-print(g2p(lyrics1, 'en'))
-# ['t', 'S', '"', 'A', 'r\\', 's', '"', 'i', 'u', '"', 'I', 'z', '@', 'p', '"', 'O', 'r\\', 'k']
+# ['tʰ', 'a', '⁴', 's', 'w', 'ei̯', '⁴', 'l', 'i', '²', 'ŋ', 'ɕ', 'j', 'au̯', '¹', 'f', 'a', '⁴', 'ŋ', 's', 'ɹ̩', '⁴', 'tɕ', 'j', 'e', '²', 'au̯', '⁴'], 
+# ['t_h', 'a', '_4', 's', 'w', 'ei_^', '_4', 'l', 'i', '_2', 'N', 's\\', 'j', 'au_^', '_1', 'f', 'a', '_4', 'N', 's', 'r\\_=', '_4', 'ts\\', 'j', 'e', '_2', 'au_^', '_4']
 print(g2p(lyrics2))
-# ['t_h', 'a_1_5', 's', 'w', 'ei_^_1_5', 'l', 'i_3_1', 'N', 's\\', 'j', 'au_^_1', 'f', 'a_1_5', 'N', 's', 'r\\_=_1_5', 'ts\\', 'j', 'e_3_1', 'au_^_1_5']
-print(g2p(lyrics3))
+# ['i', 'm', 'a', 'd', 'e', 'm', 'o', 'a', 'n', 'a', 't', 'a', 'w', 'a', 'w', 'a', 't', 'a', 'ɕ', 'i', 'n', 'o', 'h', 'i', 'k', 'a', 'ɾ', 'i'], 
 # ['i', 'm', 'a', 'd', 'e', 'm', 'o', 'a', 'n', 'a', 't', 'a', 'w', 'a', 'w', 'a', 't', 'a', 's\\', 'i', 'n', 'o', 'h', 'i', 'k', 'a', '4', 'i']
+print(g2p(lyrics3))
+# ['t', 'ʃ', 'ˈ', 'ɑ', 'ɹ', 's', 'ˈ', 'i', 'u', 'ˈ', 'ɪ', 'z', 'ə', 'p', 'ˈ', 'ɔ', 'ɹ', 'k'], 
+# ['t', 'S', '"', 'A', 'r\\', 's', '"', 'i', 'u', '"', 'I', 'z', '@', 'p', '"', 'O', 'r\\', 'k']
+print(g2p(lyrics4))
+# ['sʰ', 'a̠', 'ɾ', 'a̠', 'ŋ', 'ɦ', 'ɛ̝', 'j', 'o'], 
+# ['s_h', 'a_-', '4', 'a_-', 'N', 'h\\', 'E_r', 'j', 'o']
+
 ```
 
 note: the model expects a 639-1 code of the language in the input lyrics, if this field is ignored the model
@@ -55,3 +65,4 @@ automatically determines the language
 * jhasegaw's [phonecodes](https://github.com/jhasegaw/phonecodes)
 * stefantaubert's [pinyin-to-ipa](https://github.com/stefantaubert/pinyin-to-ipa)
 * ChuxiJ's [romaji2ipa](https://ec26ubh65w.feishu.cn/sheets/FD37spdiLhcGeEtEaFucOPX4nGg?sheet=543d9b)
+* CUNY-CL's [wikipron](https://github.com/CUNY-CL/wikipron)
