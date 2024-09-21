@@ -2,7 +2,6 @@ from .languages import chinese, japanese, english
 from .languages.symbol import symbols
 from loguru import logger
 
-
 language_module_map = {"zh": chinese, "ja": japanese, "en": english}
 
 special = [
@@ -29,7 +28,7 @@ def clean_special(text, language, special_s, target_symbol):
     return new_ph, phones[1], norm_text
 
 
-def clean_text(text, language):
+def clean_text(text, language, tok_fine, pos):
     text = text.replace("%", "-").replace("￥", ",").replace("...", "…")
     if language not in language_module_map:
         language = "en"
@@ -44,7 +43,7 @@ def clean_text(text, language):
     norm_text = language_module.text_normalize(text)
 
     if language == "zh":
-        phones, word2ph = language_module.g2p(norm_text)
+        phones, word2ph = language_module.g2p(norm_text, tok_fine, pos)
         assert len(phones) == sum(word2ph)
         assert len(norm_text) == len(word2ph)
     else:

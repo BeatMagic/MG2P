@@ -88,10 +88,10 @@ def replace_punctuation(text):
     return replaced_text
 
 
-def g2p(text):
+def g2p(text, tok_fine, pos):
     pattern = r"(?<=[{0}])\s*".format("".join(punctuation))
     sentences = [i for i in re.split(pattern, text) if i.strip() != ""]
-    phones, word2ph = _g2p(sentences)
+    phones, word2ph = _g2p(sentences, tok_fine, pos)
     return phones, word2ph
 
 
@@ -109,11 +109,9 @@ def _get_initials_finals(word):
     return initials, finals
 
 
-def _g2p(segments):
+def _g2p(segments,tok_fine, pos):
     phones_list = []
     word2ph = []
-    tok_fine = hanlp.load(hanlp.pretrained.tok.FINE_ELECTRA_SMALL_ZH)
-    pos = hanlp.load(hanlp.pretrained.pos.CTB9_POS_ELECTRA_SMALL)
     for seg in segments:
         # Replace all English words in the sentence
         seg = re.sub("[a-zA-Z]+", "", seg)

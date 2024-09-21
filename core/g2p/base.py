@@ -4,11 +4,13 @@ from .languages.symbol import symbol_to_id
 
 from typing import List, Union
 from loguru import logger
+import hanlp
 
 
 class G2P:
     def __init__(self):
-        pass
+        self.tok_fine = hanlp.load(hanlp.pretrained.tok.FINE_ELECTRA_SMALL_ZH)
+        self.pos = hanlp.load(hanlp.pretrained.pos.CTB9_POS_ELECTRA_SMALL)
 
     def __call__(self, text: Union[str, List[str]], language: Union[str, List[str]] = None):
         if isinstance(text, str):
@@ -49,7 +51,7 @@ class G2P:
         for line in langlist:
             lang = line["lang"]
             text = line["text"]
-            phones, word2ph, norm_text = clean_text(text, lang)
+            phones, word2ph, norm_text = clean_text(text, lang, self.tok_fine, self.pos)
             all_norm_text += norm_text
             all_phones += phones
             phone_ids = [symbol_to_id[symbol] for symbol in phones]
