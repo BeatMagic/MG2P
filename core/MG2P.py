@@ -62,7 +62,7 @@ class MG2P:
                                                           self.charsiu_tokenizer, **kwargs)
         return ipa_list, xsampa_list
 
-    def batch_infer(self, lyrics_list: list, tag: list = None, **kwargs):
+    def batch_infer(self, lyrics_list: list, tag_list: list = None, **kwargs):
         cleaned_lyrics_list = [utils.clean_lyrics(i) for i in lyrics_list]
         major_lang = ['zh', 'en', 'ja']
 
@@ -71,7 +71,7 @@ class MG2P:
         charsiu_process_list = []
         charsiu_tag_list = []
         raw_sequence_pos = []
-        if tag is None:
+        if tag_list is None:
             langlist = [utils.multi_lang_tokenizer(i) for i in cleaned_lyrics_list]
             flag1 = 0
             for every_lyrics in langlist:
@@ -86,7 +86,19 @@ class MG2P:
                         charsiu_tag_list.append(item['lang'])
                         raw_sequence_pos[flag1].append(2)
                 flag1 += 1
-
+        else:
+            flag1 = 0
+            for i, every_lyrics in enumerate(cleaned_lyrics_list):
+                raw_sequence_pos.append([])
+                if tag_list[i] in major_lang:
+                    g2p_process_list.append(every_lyrics)
+                    g2p_tag_list.append(tag_list[i])
+                    raw_sequence_pos[flag1].append(1)
+                else:
+                    charsiu_process_list.append(every_lyrics)
+                    charsiu_tag_list.append(every_lyrics)
+                    raw_sequence_pos[flag1].append(2)
+                flag1 += 1
         # print(g2p_process_list) ['チャーシュー是一种', '踏碎凌霄', 'わたしの光', 'charsiu is a pork ', '我爱你', 'i love you ']
         # print(g2p_tag_list) ['ja', 'zh', 'ja', 'en', 'zh', 'en']
         # print(charsiu_process_list) ['barbecued pork', 'Ich liebe dich', 'สว สด ', '넌 나의 빛', '사랑해 요']
