@@ -62,6 +62,54 @@ class MG2P:
                                                           self.charsiu_tokenizer, **kwargs)
         return ipa_list, xsampa_list
 
+    def batch_infer(self, lyrics_list: list, tag: list = None, **kwargs):
+        cleaned_lyrics_list = [utils.clean_lyrics(i) for i in lyrics_list]
+        major_lang = ['zh', 'en', 'ja']
+
+        g2p_process_list = []
+        g2p_tag_list = []
+        charsiu_process_list = []
+        charsiu_tag_list = []
+        raw_sequence_pos = []
+        if tag is None:
+            langlist = [utils.multi_lang_tokenizer(i) for i in cleaned_lyrics_list]
+            flag1 = 0
+            for every_lyrics in langlist:
+                raw_sequence_pos.append([])
+                for item in every_lyrics:
+                    if item['lang'] in major_lang:
+                        g2p_process_list.append(item['text'])
+                        g2p_tag_list.append(item['lang'])
+                        raw_sequence_pos[flag1].append(1)
+                    else:
+                        charsiu_process_list.append(item['text'])
+                        charsiu_tag_list.append(item['lang'])
+                        raw_sequence_pos[flag1].append(2)
+                flag1 += 1
+
+        # print(g2p_process_list) ['チャーシュー是一种', '踏碎凌霄', 'わたしの光', 'charsiu is a pork ', '我爱你', 'i love you ']
+        # print(g2p_tag_list) ['ja', 'zh', 'ja', 'en', 'zh', 'en']
+        # print(charsiu_process_list) ['barbecued pork', 'Ich liebe dich', 'สว สด ', '넌 나의 빛', '사랑해 요']
+        # print(charsiu_tag_list) ['es', 'de', 'th', 'ko', 'ko']
+        # print(raw_sequence_pos) [[1, 2], [2, 1, 2], [1, 2], [1], [2, 1, 1]]
+
+        g2p_processed_ipa, g2p_processed_xsampa = utils.major_g2p_batch(g2p_process_list, g2p_tag_list)
+        charsiu_processed_ipa, charsiu_processed_xsampa = utils.charsiu_g2p_batch(charsiu_process_list,
+                                                                                  charsiu_tag_list, self.charsiu_model,
+                                                                                  self.charsiu_tokenizer, **kwargs)
+        res_list = []
+        for item in raw_sequence_pos:
+            cur_ipa, cur_xsampa = [], []
+            for i in item:
+                if i == 1:
+                    cur_ipa.extend(g2p_processed_ipa.pop(0))
+                    cur_xsampa.extend(g2p_processed_xsampa.pop(0))
+                else:
+                    cur_ipa.extend(charsiu_processed_ipa.pop(0))
+                    cur_xsampa.extend(charsiu_processed_xsampa.pop(0))
+            res_list.append((cur_ipa, cur_xsampa))
+        return res_list
+
 
 if __name__ == '__main__':
     g2p = MG2P()
