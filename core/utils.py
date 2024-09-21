@@ -2,7 +2,6 @@ import re
 from konoha import WordTokenizer
 import jieba
 from deepcut import tokenize
-from transformers import T5ForConditionalGeneration, AutoTokenizer
 import torch
 import numpy as np
 from MG2P.core.phonecodes import ipa2xsampa, arpabet2ipa
@@ -144,7 +143,7 @@ def decode(model_output) -> list:
     return results
 
 
-def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> (list, list):
+def charsiu_g2p(lyrics: str, tag: str, model, tokenizer, use_32=False, use_fast=False) -> (list, list):
     """
     Use Charsiu to perform G2P transformation for minority languages
     :param lyrics: lyrics grapheme str
@@ -166,18 +165,18 @@ def charsiu_g2p(lyrics: str, tag: str, use_32=False, use_fast=False) -> (list, l
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     batch_size = 2000
-    if use_fast:
-        model_path = 'charsiu/g2p_multilingual_byT5_tiny_16_layers_100'
-        batch_size = 5000
-    else:
-        model_path = 'charsiu/g2p_multilingual_byT5_small_100'
+    # if use_fast:
+    #     model_path = 'charsiu/g2p_multilingual_byT5_tiny_16_layers_100'
+    #     batch_size = 5000
+    # else:
+    #     model_path = 'charsiu/g2p_multilingual_byT5_small_100'
         # model_path = 'D:/work/Charsiu evaluation/CharsiuPre/byT5_small_100'
-    model = T5ForConditionalGeneration.from_pretrained(model_path)
-    model.to(device)
+    # model = T5ForConditionalGeneration.from_pretrained(model_path)
+    # model.to(device)
     if not use_32:
         model.half()
 
-    tokenizer = AutoTokenizer.from_pretrained('google/byt5-small')
+    # tokenizer = AutoTokenizer.from_pretrained('google/byt5-small')
     # tokenizer = AutoTokenizer.from_pretrained('D:/work/Charsiu evaluation/CharsiuPre/byt5-small')
     for i in range(0, len(prefix_lyrics_list), batch_size):
         batch = prefix_lyrics_list[i:i + batch_size]

@@ -1,9 +1,14 @@
 import MG2P.core.utils as utils
+from transformers import T5ForConditionalGeneration, AutoTokenizer
+import torch
 
 
 class MG2P:
-    def __init__(self):
-        pass
+    def __init__(self, model_path='charsiu/g2p_multilingual_byT5_small_100', tokenizer_path='google/byt5-small'):
+        self.charsiu_model = T5ForConditionalGeneration.from_pretrained(model_path)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.charsiu_model.to(device)
+        self.charsiu_tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 
     def check_if_sup(self, language: str) -> bool:
         """
@@ -45,14 +50,16 @@ class MG2P:
                     ipa_list.extend(ipa)
                     xsampa_list.extend(xsampa)
                 else:
-                    ipa, xsampa = utils.charsiu_g2p(item['text'], item['lang'], **kwargs)
+                    ipa, xsampa = utils.charsiu_g2p(item['text'], item['lang'], self.charsiu_model,
+                                                    self.charsiu_tokenizer, **kwargs)
                     ipa_list.extend(ipa)
                     xsampa_list.extend(xsampa)
         else:
             if tag in major_lang:
                 ipa_list, xsampa_list = utils.major_g2p(cleaned_lyrics, tag)
             else:
-                ipa_list, xsampa_list = utils.charsiu_g2p(cleaned_lyrics, tag, **kwargs)
+                ipa_list, xsampa_list = utils.charsiu_g2p(cleaned_lyrics, tag, self.charsiu_model,
+                                                          self.charsiu_tokenizer, **kwargs)
         return ipa_list, xsampa_list
 
 
