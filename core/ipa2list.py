@@ -133,6 +133,7 @@ def generate_639_3_map() -> dict:
             mapping[language] = prefix
     return mapping
 
+ipa_dictionaries = {}
 
 def load_ipa_dict(tag: str, use_word: bool = False):
     map639_3 = generate_639_3_map()
@@ -141,22 +142,29 @@ def load_ipa_dict(tag: str, use_word: bool = False):
     all_ipa_set = set()
     word2ipa = dict()
     ipastr2ipas = dict()
-    phone_tsv_path = 'MG2P/core/tsv/'
+    if tag not in ipa_dictionaries:
+        phone_tsv_path = 'MG2P/core/ipa_dict/'
     # phone_tsv_path = 'tsv/'
-    directories = os.listdir(phone_tsv_path)
-    tsv_files = [file for file in directories if file.startswith(tag) and file.endswith('.tsv')]
-    for path in tsv_files:
-        file_path = os.path.join(phone_tsv_path, path)
-        with open(file_path, 'r', encoding='utf-8') as f:
+        ipa_dict_path = os.path.join(phone_tsv_path, f'{tag}.tsv')
+        with open(ipa_dict_path, 'r', encoding='utf-8') as f:
             for line in f:
-                word, ipa = line.strip().split('\t')
-                ipa_seq = ipa.split()
-                all_ipa_set |= set(ipa_seq)
-                if use_word:
-                    word2ipa[word] = ipa
-                    ipastr = "".join(ipa_seq)
-                    all_ipa_set.add(ipastr)
-                    ipastr2ipas[ipastr] = ipa_seq
+                all_ipa_set.add(line.strip())
+        ipa_dictionaries[tag] = all_ipa_set
+    else:
+        all_ipa_set = ipa_dictionaries[tag]
+    # tsv_files = [file for file in directories if file.startswith(tag) and file.endswith('.tsv')]
+    # for path in tsv_files:
+    #     file_path = os.path.join(phone_tsv_path, path)
+    #     with open(file_path, 'r', encoding='utf-8') as f:
+    #         for line in f:
+    #             word, ipa = line.strip().split('\t')
+    #             ipa_seq = ipa.split()
+    #             all_ipa_set |= set(ipa_seq)
+    #             if use_word:
+    #                 word2ipa[word] = ipa
+    #                 ipastr = "".join(ipa_seq)
+    #                 all_ipa_set.add(ipastr)
+    #                 ipastr2ipas[ipastr] = ipa_seq
     matcher = PhonemeMatcher(all_ipa_set)
     return {
         "matcher": matcher,
