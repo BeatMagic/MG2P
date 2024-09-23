@@ -2,14 +2,6 @@ from typing import List, Tuple, Dict, Set
 import sys
 import os
 
-tone_idx_to_pitch_contour = {
-    "1": "˥",
-    "2": "˧˥",
-    "3": "˧˩˧",
-    "4": "˥˩",
-    "5": ""
-}
-
 
 class TrieNode:
     def __init__(self):

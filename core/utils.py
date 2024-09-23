@@ -5,6 +5,9 @@ from pinyin_to_ipa import pinyin_to_ipa
 import os
 import json
 import LangSegment
+from collections import deque
+from loguru import logger
+
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
@@ -14,6 +17,17 @@ PITCH_CONTOUR_TO_IPA = {
     "˧˩˧": "³",
     "˥˩": "⁴",
     "0": "º"
+}
+
+YUE_PITCH_CONTOUR_TO_IPA = {
+    "˥": "¹",
+    "˥˧": "¹",
+    "˧˥": "²",
+    "˧": "³",
+    "˨˩": "⁴",
+    "˩": "⁴",
+    "˩˧": "⁵",
+    "˨": "⁶"
 }
 
 
@@ -83,8 +97,9 @@ def zh_tone_backend(ipa: list):
     tones = ["˧˥", "˧˩˧", "˥˩", "˥", "0"]
     processed_ipa = []
     split_ipa = []
+    ipa = deque(ipa)
     while ipa:
-        current = ipa.pop(0)
+        current = ipa.popleft()
         flag = True
         for tone in tones:
             if tone in current:
@@ -98,6 +113,22 @@ def zh_tone_backend(ipa: list):
             split_ipa.append(current)
             processed_ipa.append(current)
     return split_ipa, processed_ipa
+
+
+def yue_tone_backend(ipa: list):
+    tone_ipa2xsampa = {"¹": "_1", "²": "_2", "³": "_3", "⁴": "_4", "⁵": "_5", "⁶": "_6"}
+    processed_ipa = []
+    processed_xsampa = []
+    ipa = deque(ipa)
+    for tok in ipa:
+        if tok in YUE_PITCH_CONTOUR_TO_IPA:
+            processed_ipa.append(YUE_PITCH_CONTOUR_TO_IPA[tok])
+            processed_xsampa.append(tone_ipa2xsampa[YUE_PITCH_CONTOUR_TO_IPA[tok]])
+        else:
+            processed_ipa.append(tok)
+            processed_xsampa.append(IPA2SAMPA([tok])[0])
+
+    return processed_xsampa, processed_ipa
 
 
 def IPA2SAMPA(ipa: list, zh=False) -> list:

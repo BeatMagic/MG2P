@@ -18,3 +18,4 @@ hanlp==2.1.0b61
 redis
 mecab-ko
 attacut
+ToJyutping

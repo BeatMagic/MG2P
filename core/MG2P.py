@@ -10,6 +10,8 @@ from konoha import WordTokenizer
 from attacut import Tokenizer as ThaiTokenizer
 import mecab_ko as MeCab
 import redis
+from loguru import logger
+import ToJyutping
 
 
 class MG2P:
@@ -19,9 +21,10 @@ class MG2P:
         tokenizer_path='google/byt5-small',
         major_lang=['zh', 'en', 'ja', "eng"],
         use_32=False,
+        use_cache=True
     ):
         self.charsiu_model = T5ForConditionalGeneration.from_pretrained(model_path)
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         if not use_32:
             self.charsiu_model.to(device).half()
         else:
@@ -38,13 +41,15 @@ class MG2P:
         self.jp_tokenizer = WordTokenizer('Sentencepiece', model_path='MG2P/core/model.spm')
         self.thai_tokenizer = ThaiTokenizer()
         self.ko_tokenizer = MeCab.Tagger("-Owakati")
-        self.redis_client = redis.Redis(
-            host='192.168.101.22',      # Redis 服务器地址
-            port=6379,             # Redis 端口
-            password=None,         # 如果有密码则填写
-            db=3,                  # 使用的数据库编号
-            decode_responses=True  # 自动解码响应为字符串
-        )
+        if use_cache:
+            self.redis_client = redis.Redis(
+                host='192.168.101.22',      # Redis 服务器地址
+                port=6379,             # Redis 端口
+                password=None,         # 如果有密码则填写
+                db=3,                  # 使用的数据库编号
+                decode_responses=True  # 自动解码响应为字符串
+            )
+        self.use_cache = use_cache
 
     def check_if_sup(self, language: str) -> bool:
         """
@@ -68,6 +73,8 @@ class MG2P:
         [True]: the lyrics is cached
         [False]: the lyrics is not cached
         """
+        if not self.use_cache:
+            return False
         key = f"mg2p-{tag}:{lyrics}"
         if self.redis_client.exists(key):
             return True
@@ -91,9 +98,11 @@ class MG2P:
         :param tag: the language of the lyrics
         :param result: the result
         """
+        if not self.use_cache:
+            return
         key = f"mg2p-{tag}-{suffix}:{lyrics}"
         self.redis_client.set(key, str(result))
-    
+
     def set_cached_result_batch(self, cached_dict, suffix: str = "sentence"):
         """
         set the cached result
@@ -101,6 +110,8 @@ class MG2P:
         :param tag: the language of the lyrics
         :param result: the result
         """
+        if not self.use_cache:
+            return
         for key, result in cached_dict.items():
             key = f"mg2p-{key[1]}-{suffix}:{key[0]}"
             self.redis_client.set(key, str(result))
@@ -181,8 +192,49 @@ class MG2P:
 
         return new_ipa_list, new_xsampa_list
 
+    def yue_g2p_infer(self, lyrics_list: list):
+        tag_list = ['yue'] * len(lyrics_list)
+        # 处理缓存
+        in_cached_result, to_infer_idx, to_infer_lyrics, to_infer_tag = self.split_with_cache(lyrics_list, tag_list)
+        if len(to_infer_lyrics) == 0:
+            # 恢复原始顺序
+            new_ipa_list = []
+            new_xsampa_list = []
+            for idx, (lyric_line, tag) in enumerate(zip(lyrics_list, tag_list)):
+                if (lyric_line, tag) in in_cached_result:
+                    new_ipa_list.append(in_cached_result[(lyric_line, tag)][0])
+                    new_xsampa_list.append(in_cached_result[(lyric_line, tag)][1])
+            return new_ipa_list, new_xsampa_list
+
+        ipa_list = deque([])
+        xsampa_list = deque([])
+        for lyric_line in to_infer_lyrics:
+            word_ipa_list = ToJyutping.get_ipa_list(lyric_line)
+            line_ipa_list = [ipa for grapheme, ipa in word_ipa_list if ipa is not None]
+            line_ipa_list = ipalist2phoneme(line_ipa_list, self.matchers, 'yue')
+            processed_xsampa, processed_ipa = utils.yue_tone_backend(line_ipa_list)
+            ipa_list.append(processed_ipa)
+            xsampa_list.append(processed_xsampa)
+
+        infered_result = {}
+        for i, (lyric_line, tag) in enumerate(zip(to_infer_lyrics, to_infer_tag)):
+            infered_result[(lyric_line, tag)] = (ipa_list[i], xsampa_list[i])
+
+        self.set_cached_result_batch(infered_result, "sentence")
+
+        in_cached_result.update(infered_result)
+        # 恢复原始顺序
+        new_ipa_list = deque([])
+        new_xsampa_list = deque([])
+        for idx, (lyric_line, tag) in enumerate(zip(lyrics_list, tag_list)):
+            ipa, xsampa = in_cached_result[(lyric_line, tag)]
+            new_ipa_list.append(ipa)
+            new_xsampa_list.append(xsampa)
+
+        return new_ipa_list, new_xsampa_list
+
     def tokenize_lyrics(self, lyrics, tag):
-        if tag == "zh" or tag == "zho-s":
+        if tag == "zh" or tag == "zho-s" or tag == "yue":
             return self.zh_tokenizer(lyrics)
         if tag == "ja" or tag == "jpn":
             return utils.jp_tokenizer(self.jp_tokenizer, lyrics)
@@ -194,7 +246,8 @@ class MG2P:
         return lyrics_list
 
     def charsiu_g2p_infer(self, lyrics_list: list, tag_list: list, batch_size=2000):
-
+        if len(lyrics_list) == 0:
+            return [], []
         grapheme_list = []
         grapheme_split_list = [0]
 
@@ -216,7 +269,7 @@ class MG2P:
         infered_result = {}
         for i in range(0, len(to_infer_grapheme_keys), batch_size):
             to_infer_batch_keys = to_infer_grapheme_keys[i:i + batch_size]
-            with torch.cuda.amp.autocast():
+            with torch.amp.autocast(self.device):
                 out = self.charsiu_tokenizer(to_infer_batch_keys, padding=True, add_special_tokens=False, return_tensors='pt').to(self.device)
                 preds = self.charsiu_model.generate(**out, num_beams=1, max_length=61)
                 phones = utils.charsiu_model_decode(preds)
@@ -242,7 +295,7 @@ class MG2P:
 
         return ipa_list, xsampa_list
 
-    def __call__(self, lyrics: Union[str, List[str]], tag: Union[str, List[str]] = None, **kwargs) -> List[List[str]]:
+    def __call__(self, lyrics: Union[str, List[str]], tag: Union[str, List[str]] = None, batch_size: int = 2000) -> List[List[str]]:
         """
         Convert the lyrics to the corresponding ipa and xsampa, Currently, Chinese, Japanese and English use internal g2p,
         and other languages use CharsiuG2P
@@ -270,6 +323,8 @@ class MG2P:
         g2p_tag_list = []
         charsiu_process_list = []
         charsiu_tag_list = []
+        yue_process_list = []
+        yue_tag_list = []
         g2p_sources = defaultdict(list)
         if tag is None:
             langlist = list(map(utils.multi_lang_tokenizer, cleaned_lyrics_list))
@@ -283,31 +338,32 @@ class MG2P:
                     g2p_sources[idx].append(source)
         else:
             for idx, every_lyrics in enumerate(cleaned_lyrics_list):
-                process_list = g2p_process_list if tag[idx] in self.major_lang else charsiu_process_list
-                tag_list = g2p_tag_list if tag[idx] in self.major_lang else charsiu_tag_list
-                source = "major" if tag[idx] in self.major_lang else "charsiu"
+                process_list = yue_process_list if tag[idx] == "yue" else (g2p_process_list if tag[idx] in self.major_lang else charsiu_process_list)
+                tag_list = yue_tag_list if tag[idx] == "yue" else g2p_tag_list if tag[idx] in self.major_lang else charsiu_tag_list
+                source = "yue" if tag[idx] == "yue" else "major" if tag[idx] in self.major_lang else "charsiu"
                 process_list.append(every_lyrics)
                 tag_list.append(tag[idx])
                 g2p_sources[idx].append(source)
 
         # 5. 调用不同的模型进行phneme转换
         g2p_processed_ipa, g2p_processed_xsampa = self.major_g2p_infer(g2p_process_list, g2p_tag_list)
-        charsiu_processed_ipa, charsiu_processed_xsampa = self.charsiu_g2p_infer(charsiu_process_list, charsiu_tag_list, **kwargs)
+        charsiu_processed_ipa, charsiu_processed_xsampa = self.charsiu_g2p_infer(charsiu_process_list, charsiu_tag_list, batch_size=batch_size)
+        yue_processed_ipa, yue_processed_xsampa = self.yue_g2p_infer(yue_process_list)
         res_list = [
             (
                 [
-                    g2p_processed_ipa.popleft() if source == "major" else charsiu_processed_ipa.popleft()
+                    g2p_processed_ipa.popleft() if source == "major" else (yue_processed_ipa.popleft() if source == "yue" else charsiu_processed_ipa.popleft())
                     for source in g2p_sources[idx]
                 ],
                 [
-                    g2p_processed_xsampa.popleft() if source == "major" else charsiu_processed_xsampa.popleft()
+                    g2p_processed_xsampa.popleft() if source == "major" else (yue_processed_xsampa.popleft() if source == "yue" else charsiu_processed_xsampa.popleft())
                     for source in g2p_sources[idx]
                 ]
             )
             for idx in range(len(g2p_sources))
         ]
         if not is_batch:
-            return res_list[0]
+            return (res_list[0][0][0], res_list[0][1][0])
         return res_list
 
 
