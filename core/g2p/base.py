@@ -39,11 +39,12 @@ class G2P:
     def infer_one(self, text: str, language: str = None):
         if language is None:
             LangSegment.setfilters(['zh', "ja", "en"])
+            langlist = LangSegment.getTexts(text)
         else:
             assert language in ["zh", "ja", "en"], "Only support zh, ja, en language, but got {}".format(language)
             LangSegment.setfilters([language])
+            langlist = [{"lang": language, "text": text}]
 
-        langlist = LangSegment.getTexts(text)
         all_norm_text = ""
         all_phones = []
         all_phone_ids = []

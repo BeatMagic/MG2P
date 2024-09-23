@@ -1,15 +1,9 @@
 import re
-from konoha import WordTokenizer
-import jieba
-from deepcut import tokenize
-import torch
 import numpy as np
 from MG2P.core.phonecodes import ipa2xsampa, arpabet2ipa
 from pinyin_to_ipa import pinyin_to_ipa
-import MG2P.core.g2p as g2p
 import os
 import json
-from MG2P.core.ipa2list import ipalist2phoneme
 import LangSegment
 
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
@@ -65,50 +59,15 @@ def generate_prefix_code(lang_code: str) -> str:
         return '<unk>: '
 
 
-def jp_tokenizer(lyrics: str) -> list:
-    # deprecated
-    tokenizer = WordTokenizer('Sentencepiece', model_path='MG2P/core/model.spm')
+def jp_tokenizer(tokenizer, lyrics: str) -> list:
     result_list = tokenizer.tokenize(lyrics)
     result_list = [str(item) for item in result_list]
-    if list:
+    if len(result_list) > 0:
         for i, _ in enumerate(result_list):
             result_list[i] = result_list[i].replace('▁', '')
             if result_list[i] == ' ' or result_list[i] == '':
                 result_list.pop(i)
     return result_list
-
-
-def zh_tokenizer(lyrics: str) -> list:
-    # deprecated
-    result_list = list(jieba.cut(lyrics, cut_all=False))
-    return result_list
-
-
-def th_tokenizer(lyrics: str) -> list:
-    result_list = tokenize(lyrics)
-    return result_list
-
-
-def ko_tokenizer(lyrics: str) -> list:
-    lyrics = lyrics.replace(' ', '')
-    tokens = []
-    for i in range(0, len(lyrics), 3):
-        token = lyrics[i:i + 3]
-        tokens.append(token)
-    return tokens
-
-
-def tokenize_lyrics(lyrics: str, tag: str) -> list:
-    if tag == 'zh' or tag == 'zho-s':  # deprecated
-        return zh_tokenizer(lyrics)
-    if tag == 'ja' or tag == 'jpn':  # deprecated
-        return jp_tokenizer(lyrics)
-    if tag == 'th' or tag == 'tha':
-        return th_tokenizer(lyrics)
-    if tag == 'ko' or tag == 'kor':
-        return ko_tokenizer(lyrics)
-    lyrics_list = lyrics.split()
-    return lyrics_list
 
 
 def pinyin_len_coefficient(pinyin: list) -> int:
@@ -119,7 +78,7 @@ def pinyin_len_coefficient(pinyin: list) -> int:
     return flag
 
 
-def zh_tone_backend(ipa: list) -> (list, list):
+def zh_tone_backend(ipa: list):
     tones = ["˧˥", "˧˩˧", "˥˩", "˥", "0"]
     processed_ipa = []
     split_ipa = []
@@ -144,9 +103,7 @@ def IPA2SAMPA(ipa: list, zh=False) -> list:
     res = [ipa2xsampa(i, 'unk') for i in ipa]
     if zh:
         zh_tone_map = {"0": "_0", "_3_1": "_2", "_3_5_3": "_3", "_1_5": "_4"}
-        for i, _ in enumerate(res):
-            if res[i] in zh_tone_map:
-                res[i] = zh_tone_map[res[i]]
+        res = [zh_tone_map.get(i, i) for i in res]
     return res
 
 
@@ -167,13 +124,10 @@ def combine_pinyin(pinyin: list) -> list:
 
 
 def arpa2ipa(en_lyrics: list) -> list:
-    res = []
-    for i in en_lyrics:
-        res += arpabet2ipa(i, 'en')
-    return res
+    return [ipa for i in en_lyrics for ipa in arpabet2ipa(i, 'en')]
 
 
-def pinyin2ipa(zh_lyrics: list) -> (list, list):
+def pinyin2ipa(zh_lyrics: list):
     res = []
     tones = ["˧˥", "˧˩˧", "˥˩", "˥"]
     for i in combine_pinyin(zh_lyrics):
@@ -194,13 +148,8 @@ def load_romaji2ipa_map() -> dict:
     return phoneme_to_ipa_map
 
 
-def romaji2ipa(ja_lyrics: list) -> list:
-    res = []
-    roma2ipa = load_romaji2ipa_map()
-    ja_roma_list = [i.lower() for i in ja_lyrics]
-    for i in ja_roma_list:
-        res += roma2ipa[i]
-    return res
+def romaji2ipa(ja_lyrics: list, roma2ipa: dict = None) -> list:
+    return [ipa for i in ja_lyrics for ipa in roma2ipa[i.lower()]]
 
 
 def multi_lang_tokenizer(lyrics: str) -> list:
@@ -215,7 +164,7 @@ def multi_lang_tokenizer(lyrics: str) -> list:
     return langlist
 
 
-def decode(model_output) -> list:
+def charsiu_model_decode(model_output) -> list:
     model_output = model_output.cpu().numpy()
     results = []
     for idx in range(model_output.shape[0]):
@@ -223,150 +172,6 @@ def decode(model_output) -> list:
         tokens = (tokens[tokens > 1] - 3).astype(np.uint8)
         results.append(tokens.tobytes().decode('utf-8', errors='ignore'))
     return results
-
-
-def charsiu_g2p(lyrics: str, tag: str, model, tokenizer, use_32=False, use_fast=False) -> (list, list):
-    """
-    Use Charsiu to perform G2P transformation for minority languages
-    :param lyrics: lyrics grapheme str
-    :param tag: 639_1 code
-    :param use_32: whether to select fp32 as the model precision, the default is fp16
-    :param use_fast: use Charsiu_tiny_16 model in exchange for speed, the default is Charsiu_small
-    :return: ipa phoneme list, xsampa phoneme list
-    """
-    prefix_map = generate_sup_language_list()
-    # When a language is not supported (zero-shot), it uses <unk> as its prefix code.
-    # In fact, Charsiu can also predict phonemes without it, but the quality will be reduced
-    # lyrics = ['charsiu', 'is', 'a', 'Cantonese', 'style', 'of', 'barbecued', 'pork']
-    # eng-us: ['ˈtʃɑɹsiu', 'ˈɪs', 'ˈeɪ', 'ˌkæntəˈniz', 'ˈstaɪɫ', 'ˈəf', 'ˈbɑɹbɪkˌjud', 'ˈpɔɹk']
-    # unk: ['carsiw', 'iːs', 'a˧˧', 'kˌantonˈese', 'stˈaɪl', 'ɔv', 'bˈɑːbɪkjˌuːd', 'pɔrk']
-    # '': ['xarɕu', 'ˈis', 'a', 'kantoneze', 'stˈaɪl', 'ɔf', 'bˈɑːbɪkjˌuːd', 'pɔrk']
-    prefix = prefix_map[tag] if tag in prefix_map else 'unk'
-    lyrics_list = tokenize_lyrics(lyrics, tag)
-    prefix_lyrics_list = ['<' + prefix + '>: ' + i for i in lyrics_list]
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    batch_size = 2000
-    # if use_fast:
-    #     model_path = 'charsiu/g2p_multilingual_byT5_tiny_16_layers_100'
-    #     batch_size = 5000
-    # else:
-    #     model_path = 'charsiu/g2p_multilingual_byT5_small_100'
-    # model_path = 'D:/work/Charsiu evaluation/CharsiuPre/byT5_small_100'
-    # model = T5ForConditionalGeneration.from_pretrained(model_path)
-    # model.to(device)
-    if not use_32:
-        model.half()
-
-    # tokenizer = AutoTokenizer.from_pretrained('google/byt5-small')
-    # tokenizer = AutoTokenizer.from_pretrained('D:/work/Charsiu evaluation/CharsiuPre/byt5-small')
-    for i in range(0, len(prefix_lyrics_list), batch_size):
-        batch = prefix_lyrics_list[i:i + batch_size]
-
-        with torch.cuda.amp.autocast():
-            out = tokenizer(batch, padding=True, add_special_tokens=False, return_tensors='pt').to(device)
-            preds = model.generate(**out, num_beams=1, max_length=61)
-            phones = decode(preds)
-        prefix_lyrics_list[i:i + batch_size] = phones
-    ipa_list = ipalist2phoneme(prefix_lyrics_list, tag)
-    xsampa = IPA2SAMPA(ipa_list)
-    return ipa_list, xsampa
-
-
-def charsiu_g2p_batch(lyrics_list: list, tag_list: list, model, tokenizer, batch_size=2000, use_32=False) -> (
-        list, list):
-    prefix_map = generate_sup_language_list()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    grapheme_list = []
-    grapheme_split_list = [0]
-
-    # 添加prefix code并计算语种分隔位置
-    for i, lyrics in enumerate(lyrics_list):
-        current_prefix = prefix_map[tag_list[i]] if tag_list[i] in prefix_map else 'unk'
-        current_grapheme_list = tokenize_lyrics(lyrics, tag_list[i])
-        grapheme_split_list.append(len(current_grapheme_list) + grapheme_split_list[-1])
-        for grapheme in current_grapheme_list:
-            grapheme_list.append('<' + current_prefix + '>: ' + grapheme)
-
-    # print(grapheme_list) ['<spa>: barbecued', '<spa>: pork', '<ger>: Ich', '<ger>: liebe', '<ger>: dich', '<tha>: สว ', '<tha>: สด', '<tha>:  ', '<kor>: 넌나의', '<kor>: 빛', '<kor>: 사랑해', '<kor>: 요']
-    # print(grapheme_split_list) [0, 2, 5, 8, 10, 12]
-
-    if not use_32:
-        model.half()
-
-    # 批量跑训练
-    for i in range(0, len(grapheme_list), batch_size):
-        batch = grapheme_list[i:i + batch_size]
-
-        with torch.cuda.amp.autocast():
-            out = tokenizer(batch, padding=True, add_special_tokens=False, return_tensors='pt').to(device)
-            preds = model.generate(**out, num_beams=1, max_length=61)
-            phones = decode(preds)
-        grapheme_list[i:i + batch_size] = phones
-    # print(grapheme_list) ['baɾβekweð', 'poɾk', 'ɪç', 'ˈliːbə', 'dɪç', 'sua̯˩˩˦', 'sot̚˨˩', 'ha˧˥', 'nʌ̹nna̠ɰi', 'pit̚', 'sʰa̠ɾa̠ŋɦɛ̝', 'jo']
-
-    # 每个语种出现一次作为一个列表
-    ipa_list = []
-    xsampa_list = []
-    for i, tag in enumerate(tag_list):
-        start, end = grapheme_split_list[i], grapheme_split_list[i + 1]
-        current_grapheme_list = grapheme_list[start:end]
-        current_ipa_list = ipalist2phoneme(current_grapheme_list, tag)
-        ipa_list.append(current_ipa_list)
-        current_xsampa_list = IPA2SAMPA(current_ipa_list)
-        xsampa_list.append(current_xsampa_list)
-
-    return ipa_list, xsampa_list
-
-
-def major_g2p_batch(lyrics_list: list, tag_list: list) -> (list, list):
-    res = g2p.infer(lyrics_list)
-
-    ipa_list = []
-    xsampa_list = []
-    # ipa在生成前长度不可预见, 因此单独做计算
-    for i, item in enumerate(res):
-        phones = item['phones']
-        if tag_list[i] == 'en':
-            en_ipa = arpa2ipa(phones)
-            ipa_list.append(en_ipa)
-            xsampa_list.append(IPA2SAMPA(en_ipa))
-        if tag_list[i] == 'zh':
-            split_ipa, zh_ipa = pinyin2ipa(phones)
-            ipa_list.append(zh_ipa)
-            xsampa_list.append(IPA2SAMPA(split_ipa, True))
-        if tag_list[i] == 'ja':
-            ja_ipa = romaji2ipa(phones)
-            ipa_list.append(ja_ipa)
-            xsampa_list.append(IPA2SAMPA(ja_ipa))
-
-    return ipa_list, xsampa_list
-
-
-def major_g2p(lyrics: str, tag: str) -> (list, list):
-    """
-    Convert major languages to phonemes with our G2P.
-    Currently, supports English and Chinese
-    :param lyrics: lyrics only contain one language
-    :param tag: 639_1/639_2 code
-    :return: ipa phoneme list, xsampa phoneme list
-    """
-    if tag == 'zh':
-        zh_pinyin = g2p.infer(lyrics, tag)[0]['phones']
-        split_ipa, processed_ipa = pinyin2ipa(zh_pinyin)
-        xsampa = IPA2SAMPA(split_ipa, True)
-        return processed_ipa, xsampa
-    if tag == 'en':
-        en_arpa = g2p.infer(lyrics, tag)[0]['phones']
-        ipa = arpa2ipa(en_arpa)
-        xsampa = IPA2SAMPA(ipa)
-        return ipa, xsampa
-    if tag == 'ja':
-        ja_roma = g2p.infer(lyrics, tag)[0]['phones']
-        ipa = romaji2ipa(ja_roma)
-        xsampa = IPA2SAMPA(ipa)
-        return ipa, xsampa
 
 
 if __name__ == '__main__':

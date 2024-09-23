@@ -133,57 +133,37 @@ def generate_639_3_map() -> dict:
             mapping[language] = prefix
     return mapping
 
-ipa_dictionaries = {}
 
-def load_ipa_dict(tag: str, use_word: bool = False):
+def load_ipa_dict():
     map639_3 = generate_639_3_map()
-    tag = map639_3[tag] if tag in map639_3 else 'eng'
-
-    all_ipa_set = set()
-    word2ipa = dict()
-    ipastr2ipas = dict()
-    if tag not in ipa_dictionaries:
+    ipa_dictionaries = {}
+    matchers = {}
+    for_unknown_lang_ipa_set = set()
+    for language, prefix in map639_3.items():
         phone_tsv_path = 'MG2P/core/ipa_dict/'
-    # phone_tsv_path = 'tsv/'
-        ipa_dict_path = os.path.join(phone_tsv_path, f'{tag}.tsv')
+        ipa_dict_path = os.path.join(phone_tsv_path, f'{prefix}.tsv')
+        # check if the file exists
+        if not os.path.exists(ipa_dict_path):
+            continue
+        all_ipa_set = set()
         with open(ipa_dict_path, 'r', encoding='utf-8') as f:
             for line in f:
                 all_ipa_set.add(line.strip())
-        ipa_dictionaries[tag] = all_ipa_set
-    else:
-        all_ipa_set = ipa_dictionaries[tag]
-    # tsv_files = [file for file in directories if file.startswith(tag) and file.endswith('.tsv')]
-    # for path in tsv_files:
-    #     file_path = os.path.join(phone_tsv_path, path)
-    #     with open(file_path, 'r', encoding='utf-8') as f:
-    #         for line in f:
-    #             word, ipa = line.strip().split('\t')
-    #             ipa_seq = ipa.split()
-    #             all_ipa_set |= set(ipa_seq)
-    #             if use_word:
-    #                 word2ipa[word] = ipa
-    #                 ipastr = "".join(ipa_seq)
-    #                 all_ipa_set.add(ipastr)
-    #                 ipastr2ipas[ipastr] = ipa_seq
-    matcher = PhonemeMatcher(all_ipa_set)
-    return {
-        "matcher": matcher,
-        "word2ipa": word2ipa,
-        "ipastr2ipas": ipastr2ipas,
-        "all_ipa_set": all_ipa_set,
-    }
+        for_unknown_lang_ipa_set |= all_ipa_set
+        ipa_dictionaries[language] = all_ipa_set
+        matchers[language] = PhonemeMatcher(all_ipa_set)
+    matchers["unk"] = PhonemeMatcher(for_unknown_lang_ipa_set)
+    ipa_dictionaries["unk"] = for_unknown_lang_ipa_set
+    return matchers, ipa_dictionaries
 
 
-def ipalist2phoneme(lyrics_ipa: list, tag: str) -> list:
-    phone_matcher_dict = load_ipa_dict(tag)
-    phone_matcher = phone_matcher_dict["matcher"]
-    phoneme_list = []
-    for i in lyrics_ipa:
-        phoneme_list += phone_matcher.tokenize(i)
-    return phoneme_list
+def ipalist2phoneme(lyrics_ipa, matchers, tag) -> list:
+    phone_matcher = matchers.get(tag, matchers["unk"])
+    return [phoneme for ipa in lyrics_ipa for phoneme in phone_matcher.tokenize(ipa)]
 
 
 if __name__ == '__main__':
     ipa_string = ['ˈtʃɑɹsiu', 'ˈɪs', 'ˈeɪ', 'ˈpɔɹk']
+    matchers, ipa_dictionaries = load_ipa_dict()
 
-    print(ipalist2phoneme(ipa_string, 'en'))
+    print(ipalist2phoneme(ipa_string, matchers, 'en'))

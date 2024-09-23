@@ -69,7 +69,7 @@ lyrics = ['チャーシュー是一种barbecued pork',
           'わたしの光넌 나의 빛',
           'charsiu is a pork',
           '사랑해요我爱你i love you']
-print(g2p.batch_infer(lyrics))
+print(g2p(lyrics))
 #[(ipa_list,xsampa_list),(ipa_list,xsampa_list),...]
 # [(['t', '͡', 'ɕ', 'a', 'a', 'ɕ', 'u', 'u', 'z', 'e', 'i', 't', '͡', 'ɕ', 'i', 'b', 'a', 'ɾ', 'β', 'e', 'k', 'w', 'e', 'ð', 'p', 'o', 'ɾ', 'k'], 
 # ['t', '͡', 's\\', 'a', 'a', 's\\', 'u', 'u', 'z', 'e', 'i', 't', '͡', 's\\', 'i', 'b', 'a', '4', 'B', 'e', 'k', 'w', 'e', 'D', 'p', 'o', '4', 'k']), 
@@ -87,7 +87,7 @@ lyrics = ['barbecued pork',
           '我爱你',
           '사랑해요넌 나의 빛']
 tags = ['en','de','ja','zh','ko']
-print(g2p.batch_infer(lyrics,tags))
+print(g2p(lyrics,tags))
 #[(ipa_list,xsampa_list),(ipa_list,xsampa_list),...]
 # [(['b', 'ˈ', 'ɑ', 'ɹ', 'b', 'ɨ', 'k', 'j', 'ˌ', 'u', 'd', 'p', 'ˈ', 'ɔ', 'ɹ', 'k'], 
 # ['b', '"', 'A', 'r\\', 'b', '1', 'k', 'j', '%', 'u', 'd', 'p', '"', 'O', 'r\\', 'k']), 
