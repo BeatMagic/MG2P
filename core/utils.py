@@ -44,7 +44,8 @@ def clean_lyrics(lyrics: str) -> str:
     lyrics = re.sub(r'\[\d+:\d+[:.]?\d*\]', ' ', lyrics)
     # punctuation, only keep the English apostrophe: ,，.。!！?？....
     lyrics = re.sub(r'[^\w\s\']+', ' ', lyrics)
-
+    # \u3000: full-width space
+    lyrics = re.sub(r'\u3000', ' ', lyrics)
     return lyrics
 
 
@@ -149,7 +150,7 @@ def load_romaji2ipa_map() -> dict:
 
 
 def romaji2ipa(ja_lyrics: list, roma2ipa: dict = None) -> list:
-    return [ipa for i in ja_lyrics for ipa in roma2ipa[i.lower()]]
+    return [ipa for i in ja_lyrics for ipa in roma2ipa[i.lower()] if i.lower() in roma2ipa]
 
 
 def multi_lang_tokenizer(lyrics: str) -> list:
