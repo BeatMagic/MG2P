@@ -95,24 +95,18 @@ def pinyin_len_coefficient(pinyin: list) -> int:
 
 def zh_tone_backend(ipa: list):
     tones = ["˧˥", "˧˩˧", "˥˩", "˥", "0"]
+    tone_ipa2xsampa = {"˧˥": "_1", "˧˩˧": "_2", "˥˩": "_3", "˥": "_4", "0": "_0"}
     processed_ipa = []
-    split_ipa = []
+    processed_xsampa = []
     ipa = deque(ipa)
-    while ipa:
-        current = ipa.popleft()
-        flag = True
-        for tone in tones:
-            if tone in current:
-                split_ipa.append(current.replace(tone, ''))
-                split_ipa.append(tone)
-                processed_ipa.append(current.replace(tone, ''))
-                processed_ipa.append(PITCH_CONTOUR_TO_IPA[tone])
-                flag = False
-                break
-        if flag:
-            split_ipa.append(current)
-            processed_ipa.append(current)
-    return split_ipa, processed_ipa
+    for tok in ipa:
+        if tok in PITCH_CONTOUR_TO_IPA:
+            processed_ipa.append(PITCH_CONTOUR_TO_IPA[tok])
+            processed_xsampa.append(tone_ipa2xsampa[PITCH_CONTOUR_TO_IPA[tok]])
+        else:
+            processed_ipa.append(tok)
+            processed_xsampa.append(IPA2SAMPA([tok], zh=True)[0])
+    return processed_xsampa, processed_ipa
 
 
 def yue_tone_backend(ipa: list):
@@ -167,11 +161,14 @@ def pinyin2ipa(zh_lyrics: list):
         i = i.replace('ir', 'i').replace('0', '').replace('E', 'e')
         try:
             ipa_list = list(pinyin_to_ipa(i)[0])
-        except Exception as e:
-            logger.error(f"Error in pinyin2ipa: {e} \ninput pinyin:{i}")
-            ipa_list = []
-        if len(ipa_list) == 1 and not any(tone in ipa_list[0] for tone in tones):  # 轻声补充标志0
-            ipa_list[0] = ipa_list[0] + '0'
+            if len(ipa_list) == 1 and not any(tone in ipa_list[0] for tone in tones):  # 轻声补充标志0
+                ipa_list[0] = ipa_list[0] + '0'
+        except Exception as err1:
+            try:
+                ipa_list = arpa2ipa([i])
+            except Exception as err2:
+                logger.error(f"Error in pinyin2ipa: {err1}, {err2}, phoneme: {i}")
+                ipa_list = []
         res += ipa_list
     return zh_tone_backend(res)
 

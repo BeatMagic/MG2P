@@ -167,9 +167,9 @@ class MG2P:
                 ipa_list.append(en_ipa)
                 xsampa_list.append(utils.IPA2SAMPA(en_ipa))
             if tag_list[i] == 'zh':
-                split_ipa, zh_ipa = utils.pinyin2ipa(phones)
+                zh_xsampa, zh_ipa = utils.pinyin2ipa(phones)
                 ipa_list.append(zh_ipa)
-                xsampa_list.append(utils.IPA2SAMPA(split_ipa, True))
+                xsampa_list.append(zh_xsampa)
             if tag_list[i] == 'ja':
                 ja_ipa = utils.romaji2ipa(phones, self.roma2ipa_map)
                 ipa_list.append(ja_ipa)
