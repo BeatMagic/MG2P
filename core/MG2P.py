@@ -147,8 +147,8 @@ class MG2P:
         in_cached_result, to_infer_idx, to_infer_lyrics, to_infer_tag = self.split_with_cache(lyrics_list, tag_list, "sentence")
         if len(to_infer_lyrics) == 0:
             # 恢复原始顺序
-            new_ipa_list = []
-            new_xsampa_list = []
+            new_ipa_list = deque([])
+            new_xsampa_list = deque([])
             for idx, (lyric_line, tag) in enumerate(zip(lyrics_list, tag_list)):
                 if (lyric_line, tag) in in_cached_result:
                     new_ipa_list.append(in_cached_result[(lyric_line, tag)][0])
@@ -198,8 +198,8 @@ class MG2P:
         in_cached_result, to_infer_idx, to_infer_lyrics, to_infer_tag = self.split_with_cache(lyrics_list, tag_list, "sentence")
         if len(to_infer_lyrics) == 0:
             # 恢复原始顺序
-            new_ipa_list = []
-            new_xsampa_list = []
+            new_ipa_list = deque([])
+            new_xsampa_list = deque([])
             for idx, (lyric_line, tag) in enumerate(zip(lyrics_list, tag_list)):
                 if (lyric_line, tag) in in_cached_result:
                     new_ipa_list.append(in_cached_result[(lyric_line, tag)][0])
