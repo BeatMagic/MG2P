@@ -64,7 +64,7 @@ class MG2P:
             return False
         return True
 
-    def check_if_cached(self, lyrics: str, tag: str) -> bool:
+    def check_if_cached(self, lyrics: str, tag: str, suffix: str) -> bool:
         """
         check if the lyrics is cached
         :param lyrics: the lyrics
@@ -75,19 +75,19 @@ class MG2P:
         """
         if not self.use_cache:
             return False
-        key = f"mg2p-{tag}:{lyrics}"
+        key = f"mg2p-{tag}-{suffix}:{lyrics}"
         if self.redis_client.exists(key):
             return True
         return False
 
-    def get_cached_result(self, lyrics: str, tag: str) -> List[str]:
+    def get_cached_result(self, lyrics: str, tag: str, suffix: str) -> List[str]:
         """
         get the cached result
         :param lyrics: the lyrics
         :param tag: the language of the lyrics
         :return: the cached result
         """
-        key = f"mg2p-{tag}:{lyrics}"
+        key = f"mg2p-{tag}-{suffix}:{lyrics}"
         result = self.redis_client.get(key)
         return eval(result)
 
@@ -112,11 +112,11 @@ class MG2P:
         """
         if not self.use_cache:
             return
-        for key, result in cached_dict.items():
-            key = f"mg2p-{key[1]}-{suffix}:{key[0]}"
+        for (lyric, tag), result in cached_dict.items():
+            key = f"mg2p-{tag}-{suffix}:{lyric}"
             self.redis_client.set(key, str(result))
 
-    def split_with_cache(self, lyrics: List[str], tag: List[str]):
+    def split_with_cache(self, lyrics: List[str], tag: List[str], suffix: str = "sentence"):
         in_cached_result = {}
         to_infer_idx = set()
         to_infer_lyrics = []
@@ -124,8 +124,8 @@ class MG2P:
         for idx, (lyric_line, tag) in enumerate(zip(lyrics, tag)):
             if (lyric_line, tag) in in_cached_result:
                 continue
-            elif self.check_if_cached(lyric_line, tag):
-                cached_result = self.get_cached_result(lyric_line, tag)
+            elif self.check_if_cached(lyric_line, tag, suffix):
+                cached_result = self.get_cached_result(lyric_line, tag, suffix)
                 in_cached_result[(lyric_line, tag)] = cached_result
             else:
                 to_infer_idx.add(idx)

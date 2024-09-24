@@ -181,7 +181,12 @@ def load_romaji2ipa_map() -> dict:
 
 
 def romaji2ipa(ja_lyrics: list, roma2ipa: dict = None) -> list:
-    return [ipa for i in ja_lyrics for ipa in roma2ipa[i.lower()] if i.lower() in roma2ipa]
+    res = []
+    for i in ja_lyrics:
+        i = i.lower()
+        if i in roma2ipa:
+            res.extend(roma2ipa[i])
+    return res
 
 
 def multi_lang_tokenizer(lyrics: str) -> list:
