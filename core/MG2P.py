@@ -144,7 +144,7 @@ class MG2P:
 
     def major_g2p_infer(self, lyrics_list: list, tag_list: list):
         # 处理缓存
-        in_cached_result, to_infer_idx, to_infer_lyrics, to_infer_tag = self.split_with_cache(lyrics_list, tag_list)
+        in_cached_result, to_infer_idx, to_infer_lyrics, to_infer_tag = self.split_with_cache(lyrics_list, tag_list, "sentence")
         if len(to_infer_lyrics) == 0:
             # 恢复原始顺序
             new_ipa_list = []
@@ -195,7 +195,7 @@ class MG2P:
     def yue_g2p_infer(self, lyrics_list: list):
         tag_list = ['yue'] * len(lyrics_list)
         # 处理缓存
-        in_cached_result, to_infer_idx, to_infer_lyrics, to_infer_tag = self.split_with_cache(lyrics_list, tag_list)
+        in_cached_result, to_infer_idx, to_infer_lyrics, to_infer_tag = self.split_with_cache(lyrics_list, tag_list, "sentence")
         if len(to_infer_lyrics) == 0:
             # 恢复原始顺序
             new_ipa_list = []
@@ -261,7 +261,7 @@ class MG2P:
             grapheme_list.extend([f'<{current_prefix}>: {grapheme}' for grapheme in current_grapheme_list])
 
         # 处理缓存
-        in_cached_result, to_infer_idx, to_infer_grapheme_list, to_infer_tag = self.split_with_cache(grapheme_list, word_tag_list)
+        in_cached_result, to_infer_idx, to_infer_grapheme_list, to_infer_tag = self.split_with_cache(grapheme_list, word_tag_list, "word")
 
         # 转换为dict
         to_infer_grapheme_dict = {grapheme: t for grapheme, t in zip(to_infer_grapheme_list, to_infer_tag)}
@@ -280,7 +280,10 @@ class MG2P:
 
         to_infer_grapheme_list = deque(to_infer_grapheme_list)
         for idx, (grapheme, t) in enumerate(zip(grapheme_list, word_tag_list)):
-            grapheme_list[idx] = in_cached_result[(grapheme, t)][0]
+            if (grapheme, t) in in_cached_result:
+                grapheme_list[idx] = in_cached_result[(grapheme, t)][0]
+            else:
+                logger.warning(f"Failed to infer {grapheme} in {t}")
 
         # 每个语种出现一次作为一个列表
         ipa_list = deque([])
