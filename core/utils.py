@@ -165,7 +165,11 @@ def pinyin2ipa(zh_lyrics: list):
     for i in combine_pinyin(zh_lyrics):
         i = i[2:] if i[0].isupper() else i
         i = i.replace('ir', 'i').replace('0', '').replace('E', 'e')
-        ipa_list = list(pinyin_to_ipa(i)[0])
+        try:
+            ipa_list = list(pinyin_to_ipa(i)[0])
+        except Exception as e:
+            logger.error(f"Error in pinyin2ipa: {e} \ninput pinyin:{i}")
+            ipa_list = []
         if len(ipa_list) == 1 and not any(tone in ipa_list[0] for tone in tones):  # 轻声补充标志0
             ipa_list[0] = ipa_list[0] + '0'
         res += ipa_list
