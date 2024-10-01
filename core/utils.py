@@ -94,13 +94,14 @@ def pinyin_len_coefficient(pinyin: list) -> int:
 
 
 def zh_tone_backend(ipa: list):
-    tone_ipa2xsampa = {"˧˥": "_1", "˧˩˧": "_2", "˥˩": "_3", "˥": "_4", "0": "_0"}
+    tone_ipa2xsampa = {"¹": "_1", "²": "_2", "³": "_3", "⁴": "_4", "0": "_0"}
     processed_ipa = []
     processed_xsampa = []
     ipa = deque(ipa)
     for tok in ipa:
         if tok in PITCH_CONTOUR_TO_IPA:
-            processed_ipa.append(PITCH_CONTOUR_TO_IPA[tok])
+            processed_ipa.append(tok)
+            # processed_ipa.append(PITCH_CONTOUR_TO_IPA[tok])
             processed_xsampa.append(tone_ipa2xsampa[PITCH_CONTOUR_TO_IPA[tok]])
         else:
             processed_ipa.append(tok)
@@ -115,7 +116,8 @@ def yue_tone_backend(ipa: list):
     ipa = deque(ipa)
     for tok in ipa:
         if tok in YUE_PITCH_CONTOUR_TO_IPA:
-            processed_ipa.append(YUE_PITCH_CONTOUR_TO_IPA[tok])
+            processed_ipa.append(tok)
+            # processed_ipa.append(YUE_PITCH_CONTOUR_TO_IPA[tok])
             processed_xsampa.append(tone_ipa2xsampa[YUE_PITCH_CONTOUR_TO_IPA[tok]])
         else:
             processed_ipa.append(tok)
@@ -160,6 +162,19 @@ def pinyin2ipa(zh_lyrics: list):
         i = i.replace('ir', 'i').replace('0', '').replace('E', 'e')
         try:
             ipa_list = list(pinyin_to_ipa(i)[0])
+            new_ipa_list = []
+            for e in ipa_list:
+                ipa_tone = None
+                for tone in tones:
+                    if tone in e:
+                        ipa_tone = tone
+                        break
+                if ipa_tone is None:
+                    new_ipa_list.append(e)
+                else:
+                    new_ipa_list.append(e.replace(ipa_tone, ''))
+                    new_ipa_list.append(ipa_tone)
+            ipa_list = new_ipa_list
             if len(ipa_list) == 1 and not any(tone in ipa_list[0] for tone in tones):  # 轻声补充标志0
                 ipa_list[0] = ipa_list[0] + '0'
         except Exception as err1:
