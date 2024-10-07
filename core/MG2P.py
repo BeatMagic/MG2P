@@ -329,23 +329,21 @@ class MG2P:
         yue_process_list = []
         yue_tag_list = []
         g2p_sources = defaultdict(list)
-        if tag is None:
-            langlist = list(map(utils.multi_lang_tokenizer, cleaned_lyrics_list))
-            for idx, lang_objs in enumerate(langlist):
-                for item in lang_objs:
-                    process_list = g2p_process_list if item['lang'] in self.major_lang else charsiu_process_list
-                    tag_list = g2p_tag_list if item['lang'] in self.major_lang else charsiu_tag_list
-                    source = "major" if item['lang'] in self.major_lang else "charsiu"
-                    process_list.append(item['text'])
-                    tag_list.append(item['lang'])
-                    g2p_sources[idx].append(source)
-        else:
-            for idx, every_lyrics in enumerate(cleaned_lyrics_list):
-                process_list = yue_process_list if tag[idx] == "yue" else (g2p_process_list if tag[idx] in self.major_lang else charsiu_process_list)
-                tag_list = yue_tag_list if tag[idx] == "yue" else g2p_tag_list if tag[idx] in self.major_lang else charsiu_tag_list
-                source = "yue" if tag[idx] == "yue" else "major" if tag[idx] in self.major_lang else "charsiu"
-                process_list.append(every_lyrics)
-                tag_list.append(tag[idx])
+        langlist = []
+        for idx, cleaned_lyrics in enumerate(cleaned_lyrics_list):
+            lang_objs = utils.multi_lang_tokenizer(cleaned_lyrics, lang=tag if tag is None else tag[idx])
+            langlist.append(lang_objs)
+        for idx, lang_objs in enumerate(langlist):
+            for item in lang_objs:
+                process_list = g2p_process_list if item['lang'] in self.major_lang else charsiu_process_list
+                tag_list = g2p_tag_list if item['lang'] in self.major_lang else charsiu_tag_list
+                source = "major" if item['lang'] in self.major_lang else "charsiu"
+                if tag is not None and "yue" in tag and "zh" in item['lang']:
+                    process_list = yue_process_list
+                    tag_list = yue_tag_list
+                    source = "yue"
+                process_list.append(item['text'])
+                tag_list.append(item['lang'])
                 g2p_sources[idx].append(source)
 
         # 5. 调用不同的模型进行phneme转换
@@ -365,9 +363,16 @@ class MG2P:
             )
             for idx in range(len(g2p_sources))
         ]
-        if not is_batch:
-            return (res_list[0][0][0], res_list[0][1][0])
-        return res_list
+        return_res = []
+        for ipa_list, xsampa_list in res_list:
+            ipas = []
+            xsampas = []
+            for ipa in ipa_list:
+                ipas.extend(ipa)
+            for xsampa in xsampa_list:
+                xsampas.extend(xsampa)
+            return_res.append((ipas, xsampas))
+        return return_res
 
 
 if __name__ == '__main__':

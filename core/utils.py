@@ -30,6 +30,13 @@ YUE_PITCH_CONTOUR_TO_IPA = {
     "˨": "⁶"
 }
 
+ALL_LANGUAGES = ['af', 'am', 'an', 'ar', 'as', 'az', 'be', 'bg', 'bn', 'br', 'bs', 'ca', 'cs', 'cy', 'da', 'de', 'dz', 'el',
+                 'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fo', 'fr', 'ga', 'gl', 'gu', 'he', 'hi', 'hr', 'ht', 'hu', 'hy',
+                 'id', 'is', 'it', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 'ku', 'ky', 'la', 'lb', 'lo', 'lt', 'lv', 'mg',
+                 'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'nb', 'ne', 'nl', 'nn', 'no', 'oc', 'or', 'pa', 'pl', 'ps', 'pt', 'qu',
+                 'ro', 'ru', 'rw', 'se', 'si', 'sk', 'sl', 'sq', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tl', 'tr', 'ug', 'uk',
+                 'ur', 'vi', 'vo', 'wa', 'xh', 'zh', 'zu']
+
 
 def generate_sup_language_list() -> dict:
     """
@@ -204,14 +211,11 @@ def romaji2ipa(ja_lyrics: list, roma2ipa: dict = None) -> list:
     return res
 
 
-def multi_lang_tokenizer(lyrics: str) -> list:
-    LangSegment.setfilters(
-        ['af', 'am', 'an', 'ar', 'as', 'az', 'be', 'bg', 'bn', 'br', 'bs', 'ca', 'cs', 'cy', 'da', 'de', 'dz', 'el',
-         'en', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fo', 'fr', 'ga', 'gl', 'gu', 'he', 'hi', 'hr', 'ht', 'hu', 'hy',
-         'id', 'is', 'it', 'ja', 'jv', 'ka', 'kk', 'km', 'kn', 'ko', 'ku', 'ky', 'la', 'lb', 'lo', 'lt', 'lv', 'mg',
-         'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'nb', 'ne', 'nl', 'nn', 'no', 'oc', 'or', 'pa', 'pl', 'ps', 'pt', 'qu',
-         'ro', 'ru', 'rw', 'se', 'si', 'sk', 'sl', 'sq', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tl', 'tr', 'ug', 'uk',
-         'ur', 'vi', 'vo', 'wa', 'xh', 'zh', 'zu'])
+def multi_lang_tokenizer(lyrics: str, lang=None) -> list:
+    if lang is not None:
+        LangSegment.setfilters([lang] + ALL_LANGUAGES)
+    else:
+        LangSegment.setfilters(ALL_LANGUAGES)
     langlist = LangSegment.getTexts(lyrics)
     return langlist
 
