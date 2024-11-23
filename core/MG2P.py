@@ -23,7 +23,7 @@ class MG2P:
         use_32=False,
         use_cache=True
     ):
-        self.charsiu_model = T5ForConditionalGeneration.from_pretrained(model_path)
+        self.charsiu_model = T5ForConditionalGeneration.from_pretrained(model_path, local_files_only=True)
         device = "cuda" if torch.cuda.is_available() else "cpu"
         if not use_32:
             self.charsiu_model.to(device).half()
