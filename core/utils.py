@@ -52,6 +52,9 @@ def generate_sup_language_list() -> dict:
     return mapping
 
 
+sup_map_sup_language = generate_sup_language_list()
+
+
 def clean_lyrics(lyrics: str) -> str:
     """
     Clean lyrics by rules, currently supported:
@@ -74,9 +77,8 @@ def generate_prefix_code(lang_code: str) -> str:
     """
     generate Charsiu's prefix code
     """
-    map = generate_sup_language_list()
-    if lang_code in map:
-        return '<' + map[lang_code] + '>: '
+    if lang_code in sup_map_sup_language:
+        return '<' + sup_map_sup_language[lang_code] + '>: '
     else:
         return '<unk>: '
 

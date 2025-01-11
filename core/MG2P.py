@@ -4,7 +4,7 @@ import MG2P.core.utils as utils
 from transformers import T5ForConditionalGeneration, AutoTokenizer
 import torch
 from collections import defaultdict, deque
-import MG2P.core.g2p as g2p
+from MG2P.core.g2p import G2P as BaseG2P
 from MG2P.core.ipa2list import ipalist2phoneme, load_ipa_dict
 from konoha import WordTokenizer
 from attacut import Tokenizer as ThaiTokenizer
@@ -21,7 +21,7 @@ class MG2P:
         tokenizer_path='google/byt5-small',
         major_lang=['zh', 'en', 'ja', "eng"],
         use_32=False,
-        use_cache=True
+        use_cache=False
     ):
         self.charsiu_model = T5ForConditionalGeneration.from_pretrained(model_path, local_files_only=True)
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -37,7 +37,8 @@ class MG2P:
         matchers, ipa_dictionaries = load_ipa_dict()
         self.matchers = matchers
         self.ipa_dictionaries = ipa_dictionaries
-        self.zh_tokenizer = g2p.g2p_model.tok_fine
+        self.base_g2p = BaseG2P()
+        self.zh_tokenizer = self.base_g2p.tok_fine
         self.jp_tokenizer = WordTokenizer('Sentencepiece', model_path='MG2P/core/model.spm')
         self.thai_tokenizer = ThaiTokenizer()
         self.ko_tokenizer = MeCab.Tagger("-Owakati")
@@ -155,7 +156,7 @@ class MG2P:
                     new_xsampa_list.append(in_cached_result[(lyric_line, tag)][1])
             return new_ipa_list, new_xsampa_list
 
-        res = g2p.infer(to_infer_lyrics, to_infer_tag)
+        res = self.base_g2p(to_infer_lyrics, to_infer_tag)
 
         ipa_list = deque([])
         xsampa_list = deque([])
@@ -269,10 +270,10 @@ class MG2P:
         infered_result = {}
         for i in range(0, len(to_infer_grapheme_keys), batch_size):
             to_infer_batch_keys = to_infer_grapheme_keys[i:i + batch_size]
-            with torch.amp.autocast(self.device):
-                out = self.charsiu_tokenizer(to_infer_batch_keys, padding=True, add_special_tokens=False, return_tensors='pt').to(self.device)
-                preds = self.charsiu_model.generate(**out, num_beams=1, max_length=61)
-                phones = utils.charsiu_model_decode(preds)
+            out = self.charsiu_tokenizer(to_infer_batch_keys, padding=True, add_special_tokens=False, return_tensors='pt')
+            out = {k: v.to(self.device) for k, v in out.items()}
+            preds = self.charsiu_model.generate(**out, num_beams=1, max_length=61)
+            phones = utils.charsiu_model_decode(preds)
             infered_result.update({(to_infer_batch_keys[idx], to_infer_grapheme_dict[to_infer_batch_keys[idx]]): (phones[idx], None) for idx in range(len(to_infer_batch_keys))})
 
         self.set_cached_result_batch(infered_result, "word")
