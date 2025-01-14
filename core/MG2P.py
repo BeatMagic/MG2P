@@ -20,11 +20,12 @@ class MG2P:
         model_path='charsiu/g2p_multilingual_byT5_small_100',
         tokenizer_path='google/byt5-small',
         major_lang=['zh', 'en', 'ja', "eng"],
-        use_32=False,
-        use_cache=False
+        use_32=True,
+        use_cache=False,
+        use_gpu=True,
     ):
         self.charsiu_model = T5ForConditionalGeneration.from_pretrained(model_path, local_files_only=True)
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cuda" if torch.cuda.is_available() and use_gpu else "cpu"
         if not use_32:
             self.charsiu_model.to(device).half()
         else:
@@ -37,7 +38,7 @@ class MG2P:
         matchers, ipa_dictionaries = load_ipa_dict()
         self.matchers = matchers
         self.ipa_dictionaries = ipa_dictionaries
-        self.base_g2p = BaseG2P()
+        self.base_g2p = BaseG2P(use_gpu)
         self.zh_tokenizer = self.base_g2p.tok_fine
         self.jp_tokenizer = WordTokenizer('Sentencepiece', model_path='MG2P/core/model.spm')
         self.thai_tokenizer = ThaiTokenizer()

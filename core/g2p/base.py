@@ -8,9 +8,13 @@ import hanlp
 
 
 class G2P:
-    def __init__(self):
-        self.tok_fine = hanlp.load(hanlp.pretrained.tok.FINE_ELECTRA_SMALL_ZH)
-        self.pos = hanlp.load(hanlp.pretrained.pos.CTB9_POS_ELECTRA_SMALL)
+    def __init__(self, use_gpu: bool = True):
+        if not use_gpu:
+            self.tok_fine = hanlp.load(hanlp.pretrained.tok.FINE_ELECTRA_SMALL_ZH, devices=[])
+            self.pos = hanlp.load(hanlp.pretrained.pos.CTB9_POS_ELECTRA_SMALL, devices=[])
+        else:
+            self.tok_fine = hanlp.load(hanlp.pretrained.tok.FINE_ELECTRA_SMALL_ZH)
+            self.pos = hanlp.load(hanlp.pretrained.pos.CTB9_POS_ELECTRA_SMALL)
 
     def __call__(self, text: Union[str, List[str]], language: Union[str, List[str]] = None):
         if isinstance(text, str):
